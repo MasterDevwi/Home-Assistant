@@ -1,0 +1,1227 @@
+alias: Send notification
+sequence:
+  - variables:
+      william:
+        - Personal Laptop
+        - Work Laptop
+      amy:
+        - Work Laptop
+      babysitter:
+        - Guest Laptop
+      html5_endpoints_list:
+        notify_family: all
+        notify_parents: "{{ william + amy }}"
+        notify_parents_and_babysitter: "{{ william + amy + babysitter }}"
+        notify_william: "{{ william }}"
+        notify_amy: "{{ amy }}"
+    alias: >-
+      Map browsers (Note: To customize, add variables and device names for each
+      person and then for each Send To entity specify whether to notify all
+      HTML5 browsers or specific people)
+  - variables:
+      device_type: "{{ device_type | default('all') }}"
+      html5_endpoints: >
+        {% if (device_type in ['all', 'web']) and (html5_endpoints_list[send_to]
+        is defined) and (html5_endpoints_list[send_to] is not none) and
+        (html5_endpoints_list[send_to] != 'all') %}
+          {{ html5_endpoints_list[send_to] }}
+        {% endif %}
+      html5_send_to_all: "{{ true if (html5_endpoints_list[send_to] == 'all') else false}}"
+      send_to_mobile: "{{ device_type in ['all', 'mobile'] }}"
+      send_to_web: >-
+        {{ (device_type in ['all', 'web']) and (send_to in html5_endpoints_list)
+        and (html5_endpoints is not none) }}
+      notification_type: "{{ notification_type | default('notify') }}"
+      html5_dismiss: >-
+        {{ notification_type is defined and notification_type ==
+        'clear_notification' }}
+      message: "{{ message if (notification_type == 'notify') else notification_type }}"
+      url: "{{ url | default(None) }}"
+      click_action: "{{ url | default(None) }}"
+      icon: "{{ icon | default(None) }}"
+      image: "{{ image | default(None) }}"
+      video: "{{ video | default(None) }}"
+      audio: "{{ audio | default(None) }}"
+      camera: "{{ camera | default(\"none\") }}"
+      attachment:
+        hide-thumbnail: "{{ hide_media_thumbnail | default(false) }}"
+      map_latitude: "{{ map_latitude | default(None) }}"
+      map_longitude: "{{ map_longitude | default(None) }}"
+      map_latitude_delta: "{{ map_latitude_delta | default(0.1) }}"
+      map_longitude_delta: "{{ map_longitude_delta | default(0.1) }}"
+      map_second_latitude: "{{ map_second_latitude | default(None) }}"
+      map_second_longitude: "{{ map_second_longitude | default(None) }}"
+      map_shows_line_between_points: "{{ map_shows_line_between_points | default(false) }}"
+      map_shows_compass: "{{ map_shows_compass | default(false) }}"
+      map_shows_points_of_interest: "{{ map_shows_points_of_interest | default(false) }}"
+      map_shows_scale: "{{ map_shows_scale | default(false) }}"
+      map_shows_traffic: "{{ map_shows_traffic | default(false) }}"
+      map_shows_user_location: "{{ map_shows_user_location | default(false) }}"
+      tag: "{{ tag | default(None) }}"
+      group: "{{ group | default(None) }}"
+      critical: "{{ true if interruption_level == 'critical' else false }}"
+      priority: "{{ 'high' if critical else 'normal' }}"
+      ttl: "{{ ttl if ttl is defined else (0 if critical else 86400) }}"
+      tts_text: "{{ tts_text | default(none) }}"
+      presentation_options: "{{ ['badge', 'sound'] if hide_notification_when_open else None }}"
+      alarm_stream_mode: >-
+        {{ alarm_stream_max if (critical and (critical_alert_volume == 1 )) else
+        alarm_stream }}
+      channel: "{{ alarm_stream_mode if critical else group }}"
+      media_stream: "{{ alarm_stream_mode if critical else None }}"
+      action_data:
+        latitude: "{{ map_latitude }}"
+        longitude: "{{ map_longitude }}"
+        "{{ \"latitude_delta\" if map_latitude_delta else \"disabled_latitude_delta\" }}": "{{ map_latitude_delta }}"
+        "{{ \"longitude_delta\" if map_longitude_delta else \"disabled_longitude_delta\" }}": "{{ map_longitude_delta }}"
+        "{{ \"second_latitude\" if map_second_latitude else \"disabled_second_latitude\" }}": "{{ map_second_latitude }}"
+        "{{ \"second_longitude\" if map_second_longitude else \"disabled_second_longitude\" }}": "{{ map_second_longitude }}"
+        "{{ \"shows_line_between_points\" if map_shows_line_between_points else \"disabled_shows_line_between_points\" }}": "{{ map_shows_line_between_points }}"
+        "{{ \"shows_compass\" if map_shows_compass else \"disabled_shows_compass\" }}": "{{ map_shows_compass }}"
+        "{{ \"shows_points_of_interest\" if map_shows_points_of_interest else \"disabled_shows_points_of_interest\" }}": "{{ map_shows_points_of_interest }}"
+        "{{ \"shows_scale\" if map_shows_scale else \"disabled_shows_scale\" }}": "{{ map_shows_scale }}"
+        "{{ \"shows_traffic\" if map_shows_traffic else \"disabled_shows_traffic\" }}": "{{ map_shows_traffic }}"
+        "{{ \"shows_user_location\" if map_shows_user_location else \"disabled_shows_user_location\" }}": "{{ map_shows_user_location }}"
+      push:
+        interruption-level: "{{ interruption_level | default('active') }}"
+        category: |
+          {%- if camera != "none" %}
+            camera
+          {%- elif map_latitude != "none" %}
+            map
+          {%- else %}
+            {{ default }}
+          {%- endif %}
+        sound:
+          name: |
+            {%- if notification_sound %}
+              {{ notification_sound }}
+            {% else %}
+              default
+            {%- endif %}
+          "{{ \"critical\" if critical else \"disabled_critical\" }}": 1
+          "{{ \"volume\" if critical else \"disabled_volume\" }}": "{{ critical_alert_volume | default(1) }}"
+        "{{ \"badge\" if badge is defined else \"disabled_badge\" }}": "{{ badge }}"
+      ios_shortcut_name: "{{ ios_shortcut_name | default(None) }}"
+      include_ios_shortcut: "{{ ios_shortcut_name is not none }}"
+      ios_shortcut_key_1_name: "{{ ios_shortcut_key_1_name | default(None) }}"
+      ios_shortcut_key_1_value: "{{ ios_shortcut_key_1_value | default(None) }}"
+      ios_shortcut_key_2_name: "{{ ios_shortcut_key_2_name | default(None) }}"
+      ios_shortcut_key_2_value: "{{ ios_shortcut_key_2_value | default(None) }}"
+      ios_shortcut_key_3_name: "{{ ios_shortcut_key_3_name | default(None) }}"
+      ios_shortcut_key_3_value: "{{ ios_shortcut_key_3_value | default(None) }}"
+      ios_shortcut_key_4_name: "{{ ios_shortcut_key_4_name | default(None) }}"
+      ios_shortcut_key_4_value: "{{ ios_shortcut_key_4_value | default(None) }}"
+      ios_shortcut_key_5_name: "{{ ios_shortcut_key_5_name | default(None) }}"
+      ios_shortcut_key_5_value: "{{ ios_shortcut_key_5_value | default(None) }}"
+      shortcut:
+        name: "{{ ios_shortcut_name }}"
+        "{{ ios_shortcut_key_1_name }}": "{{ ios_shortcut_key_1_value }}"
+        "{{ ios_shortcut_key_2_name }}": "{{ ios_shortcut_key_2_value }}"
+        "{{ ios_shortcut_key_3_name }}": "{{ ios_shortcut_key_3_value }}"
+        "{{ ios_shortcut_key_4_name }}": "{{ ios_shortcut_key_4_value }}"
+        "{{ ios_shortcut_key_5_name }}": "{{ ios_shortcut_key_5_value }}"
+    alias: Define notification payload
+  - variables:
+      action_1:
+        - action: >-
+            {{ 'URI' if action_1_launch_uri is defined else ('REPLY' if
+            action_1_accept_text_input else (action_1_id | default(None))) }}
+          title: "{{ action_1_title | default(None) }}"
+          icon: "{{ action_1_icon | default(None) }}"
+          activationMode: "{{ 'foreground' if action_1_launch_app else 'background' }}"
+          authenticationRequired: "{{ action_1_authentication_required | default(false) }}"
+          destructive: "{{ action_1_use_red_text | default(false) }}"
+          uri: "{{ action_1_launch_uri | default(None) }}"
+          behavior: "{{ 'textInput' if action_1_accept_text_input else None }}"
+      action_2:
+        - action: >-
+            {{ 'URI' if action_2_launch_uri is defined else ('REPLY' if
+            action_2_accept_text_input else (action_2_id | default(None))) }}
+          title: "{{ action_2_title | default(None) }}"
+          icon: "{{ action_2_icon | default(None) }}"
+          activationMode: "{{ 'foreground' if action_2_launch_app else 'background' }}"
+          authenticationRequired: "{{ action_2_authentication_required | default(false) }}"
+          destructive: "{{ action_2_use_red_text | default(false) }}"
+          uri: "{{ action_2_launch_uri | default(None) }}"
+          behavior: "{{ 'textInput' if action_2_accept_text_input else None }}"
+      action_3:
+        - action: >-
+            {{ 'URI' if action_3_launch_uri is defined else ('REPLY' if
+            action_3_accept_text_input else (action_3_id | default(None))) }}
+          title: "{{ action_3_title | default(None) }}"
+          icon: "{{ action_3_icon | default(None) }}"
+          activationMode: "{{ 'foreground' if action_3_launch_app else 'background' }}"
+          authenticationRequired: "{{ action_3_authentication_required | default(false) }}"
+          destructive: "{{ action_3_use_red_text | default(false) }}"
+          uri: "{{ action_3_launch_uri | default(None) }}"
+          behavior: "{{ 'textInput' if action_3_accept_text_input else None }}"
+      action_4:
+        - action: >-
+            {{ 'URI' if action_4_launch_uri is defined else ('REPLY' if
+            action_4_accept_text_input else (action_4_id | default(None))) }}
+          title: "{{ action_4_title | default(None) }}"
+          icon: "{{ action_4_icon | default(None) }}"
+          activationMode: "{{ 'foreground' if action_4_launch_app else 'background' }}"
+          authenticationRequired: "{{ action_4_authentication_required | default(false) }}"
+          destructive: "{{ action_4_use_red_text | default(false) }}"
+          uri: "{{ action_4_launch_uri | default(None) }}"
+          behavior: "{{ 'textInput' if action_4_accept_text_input else None }}"
+      action_5:
+        - action: >-
+            {{ 'URI' if action_5_launch_uri is defined else ('REPLY' if
+            action_5_accept_text_input else (action_5_id | default(None))) }}
+          title: "{{ action_5_title | default(None) }}"
+          icon: "{{ action_5_icon | default(None) }}"
+          activationMode: "{{ 'foreground' if action_5_launch_app else 'background' }}"
+          authenticationRequired: "{{ action_5_authentication_required | default(false) }}"
+          destructive: "{{ action_5_use_red_text | default(false) }}"
+          uri: "{{ action_5_launch_uri | default(None) }}"
+          behavior: "{{ 'textInput' if action_5_accept_text_input else None }}"
+      action_6:
+        - action: >-
+            {{ 'URI' if action_6_launch_uri is defined else ('REPLY' if
+            action_6_accept_text_input else (action_6_id | default(None))) }}
+          title: "{{ action_6_title | default(None) }}"
+          icon: "{{ action_6_icon | default(None) }}"
+          activationMode: "{{ 'foreground' if action_6_launch_app else 'background' }}"
+          authenticationRequired: "{{ action_6_authentication_required | default(false) }}"
+          destructive: "{{ action_6_use_red_text | default(false) }}"
+          uri: "{{ action_6_launch_uri | default(None) }}"
+          behavior: "{{ 'textInput' if action_6_accept_text_input else None }}"
+      action_7:
+        - action: >-
+            {{ 'URI' if action_7_launch_uri is defined else ('REPLY' if
+            action_7_accept_text_input else (action_7_id | default(None))) }}
+          title: "{{ action_7_title | default(None) }}"
+          icon: "{{ action_7_icon | default(None) }}"
+          activationMode: "{{ 'foreground' if action_7_launch_app else 'background' }}"
+          authenticationRequired: "{{ action_7_authentication_required | default(false) }}"
+          destructive: "{{ action_7_use_red_text | default(false) }}"
+          uri: "{{ action_7_launch_uri | default(None) }}"
+          behavior: "{{ 'textInput' if action_7_accept_text_input else None }}"
+      action_8:
+        - action: >-
+            {{ 'URI' if action_8_launch_uri is defined else ('REPLY' if
+            action_8_accept_text_input else (action_8_id | default(None))) }}
+          title: "{{ action_8_title | default(None) }}"
+          icon: "{{ action_8_icon | default(None) }}"
+          activationMode: "{{ 'foreground' if action_8_launch_app else 'background' }}"
+          authenticationRequired: "{{ action_8_authentication_required | default(false) }}"
+          destructive: "{{ action_8_use_red_text | default(false) }}"
+          uri: "{{ action_8_launch_uri | default(None) }}"
+          behavior: "{{ 'textInput' if action_8_accept_text_input else None }}"
+      action_9:
+        - action: >-
+            {{ 'URI' if action_9_launch_uri is defined else ('REPLY' if
+            action_9_accept_text_input else (action_9_id | default(None))) }}
+          title: "{{ action_9_title | default(None) }}"
+          icon: "{{ action_9_icon | default(None) }}"
+          activationMode: "{{ 'foreground' if action_9_launch_app else 'background' }}"
+          authenticationRequired: "{{ action_9_authentication_required | default(false) }}"
+          destructive: "{{ action_9_use_red_text | default(false) }}"
+          uri: "{{ action_9_launch_uri | default(None) }}"
+          behavior: "{{ 'textInput' if action_9_accept_text_input else None }}"
+      action_10:
+        - action: >-
+            {{ 'URI' if action_10_launch_uri is defined else ('REPLY' if
+            action_10_accept_text_input else (action_10_id | default(None))) }}
+          title: "{{ action_10_title | default(None) }}"
+          icon: "{{ action_10_icon | default(None) }}"
+          activationMode: "{{ 'foreground' if action_10_launch_app else 'background' }}"
+          authenticationRequired: "{{ action_10_authentication_required | default(false) }}"
+          destructive: "{{ action_10_use_red_text | default(false) }}"
+          uri: "{{ action_10_launch_uri | default(None) }}"
+          behavior: "{{ 'textInput' if action_10_accept_text_input else None }}"
+      actions: |
+        {% if action_10_id is defined %}
+          {{ action_1 + action_2 + action_3 + action_4 + action_5 + action_6 + action_7 + action_8 + action_9 + action_10 }}
+        {% elif action_9_id is defined %}
+          {{ action_1 + action_2 + action_3 + action_4 + action_5 + action_6 + action_7 + action_8 + action_9 }}
+        {% elif action_8_id is defined %}
+          {{ action_1 + action_2 + action_3 + action_4 + action_5 + action_6 + action_7 + action_8 }}
+        {% elif action_7_id is defined %}
+          {{ action_1 + action_2 + action_3 + action_4 + action_5 + action_6 + action_7 }}
+        {% elif action_6_id is defined %}
+          {{ action_1 + action_2 + action_3 + action_4 + action_5 + action_6 }}
+        {% elif action_5_id is defined %}
+          {{ action_1 + action_2 + action_3 + action_4 + action_5 }}
+        {% elif action_4_id is defined %}
+          {{ action_1 + action_2 + action_3 + action_4 }}
+        {% elif action_3_id is defined %}
+          {{ action_1 + action_2 + action_3 }}
+        {% elif action_2_id is defined %}
+          {{ action_1 + action_2 }}
+        {% elif action_1_id is defined %}
+          {{ action_1 }}
+        {% else %}
+          None
+        {% endif %}
+    alias: Define actions
+  - alias: Send to the notification to mobile and/or web
+    parallel:
+      - alias: Send to mobile
+        if:
+          - alias: The notification should be sent to all or mobile devices
+            condition: template
+            value_template: "{{ send_to_mobile }}"
+        then:
+          - alias: Send notification to mobile devices via the Home Assistant app
+            data:
+              title: "{{ title }}"
+              message: "{{ message }}"
+              data:
+                subtitle: "{{ subtitle }}"
+                subject: "{{ subject }}"
+                url: "{{ url }}"
+                clickAction: "{{ click_action }}"
+                icon_url: "{{ icon }}"
+                image: "{{ image }}"
+                video: "{{ video }}"
+                audio: "{{ audio }}"
+                entity_id: "{{ camera }}"
+                "{{ \"attachment\" if hide_media_thumbnail else \"disabled_attachment\" }}": "{{ attachment }}"
+                action_data: "{{ action_data }}"
+                tag: "{{ tag }}"
+                group: "{{ group }}"
+                channel: "{{ channel }}"
+                push: "{{ push }}"
+                priority: "{{ priority }}"
+                ttl: "{{ ttl }}"
+                media_stream: "{{ media_stream }}"
+                tts_text: "{{ critical_alert_tts_text }}"
+                presentation_options: "{{ presentation_options }}"
+                actions: "{{ actions }}"
+                "{{ \"shortcut\" if include_ios_shortcut else \"disabled_shortcut\" }}": "{{ shortcut }}"
+            action: notify.{{send_to}}
+      - alias: Send to web
+        if:
+          - alias: The notification should be sent to all devices or web endpoints
+            condition: template
+            value_template: "{{ send_to_web }}"
+        then:
+          - alias: Send to HTML5 devices based on targets and actions
+            choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ html5_send_to_all}}"
+                    alias: Send to all HTML5 devices
+                  - condition: template
+                    value_template: "{{ html5_dismiss }}"
+                    alias: Dismiss notification
+                sequence:
+                  - alias: Dismiss notification on all web endpoints (via HTML5)
+                    data:
+                      data:
+                        tag: "{{ tag }}"
+                    action: html5.dismiss
+                    enabled: true
+                alias: Dismiss on all HTML5 devices
+              - conditions:
+                  - alias: Send to specific HTML5 devices
+                    condition: template
+                    value_template: "{{ not html5_send_to_all}}"
+                  - condition: template
+                    value_template: "{{ html5_dismiss }}"
+                    alias: Dismiss notification
+                sequence:
+                  - alias: Dismiss notification on specific web endpoints (via HTML5)
+                    data:
+                      target: "{{ html5_endpoints }}"
+                      data:
+                        tag: "{{ tag }}"
+                    action: html5.dismiss
+                    enabled: true
+                alias: Dismiss on specific HTML5 devices
+              - conditions:
+                  - condition: template
+                    value_template: "{{ html5_send_to_all}}"
+                    alias: Send to all HTML5 devices
+                  - alias: The user has NOT specified custom actions
+                    condition: template
+                    value_template: "{{ actions is not defined or actions is none }}"
+                sequence:
+                  - alias: >-
+                      Send notification to all web endpoints (via HTML5) without
+                      actions
+                    data:
+                      title: "{{ title }}"
+                      message: "{{ message }}"
+                      data:
+                        url: "{{ url }}"
+                        tag: "{{ tag }}"
+                        group: "{{ group }}"
+                        priority: "{{ priority }}"
+                        badge: "{{ badge }}"
+                        ttl: "{{ ttl }}"
+                    action: notify.html5
+                    enabled: true
+                alias: Notify all HTML5 devices (without actions)
+              - conditions:
+                  - alias: Send to specific HTML5 devices
+                    condition: template
+                    value_template: "{{ not html5_send_to_all}}"
+                  - alias: The user has NOT specified custom actions
+                    condition: template
+                    value_template: "{{ actions is not defined or actions is none }}"
+                sequence:
+                  - alias: >-
+                      Send notification to specific web endpoints (via HTML5)
+                      without actions
+                    data:
+                      title: "{{ title }}"
+                      message: "{{ message }}"
+                      target: "{{ html5_endpoints }}"
+                      data:
+                        url: "{{ url }}"
+                        tag: "{{ tag }}"
+                        group: "{{ group }}"
+                        priority: "{{ priority }}"
+                        ttl: "{{ ttl }}"
+                        badge: "{{ badge }}"
+                    action: notify.html5
+                    enabled: true
+                alias: Notify specific HTML5 devices (without actions)
+              - conditions:
+                  - condition: template
+                    value_template: "{{ html5_send_to_all}}"
+                    alias: Send to all HTML5 devices
+                  - alias: The user has specified custom actions
+                    condition: template
+                    value_template: "{{ actions is defined and actions is not none }}"
+                sequence:
+                  - alias: >-
+                      Send notification to all web endpoints (via HTML5) with
+                      custom actions
+                    data:
+                      title: "{{ title }}"
+                      message: "{{ message }}"
+                      data:
+                        url: "{{ url }}"
+                        tag: "{{ tag }}"
+                        group: "{{ group }}"
+                        priority: "{{ priority }}"
+                        ttl: "{{ ttl }}"
+                        badge: "{{ badge }}"
+                        actions: "{{ actions }}"
+                    action: notify.html5
+                    enabled: true
+                alias: Notify all HTML5 devices (with actions)
+              - conditions:
+                  - alias: Send to specific HTML5 devices
+                    condition: template
+                    value_template: "{{ not html5_send_to_all}}"
+                  - alias: The user has specified custom actions
+                    condition: template
+                    value_template: "{{ actions is defined and actions is not none }}"
+                sequence:
+                  - alias: >-
+                      Send notification to specific web endpoints (via HTML5)
+                      with custom actions
+                    data:
+                      title: "{{ title }}"
+                      message: "{{ message }}"
+                      target: "{{ html5_endpoints }}"
+                      data:
+                        url: "{{ url }}"
+                        tag: "{{ tag }}"
+                        group: "{{ group }}"
+                        priority: "{{ priority }}"
+                        ttl: "{{ ttl }}"
+                        badge: "{{ badge }}"
+                        actions: "{{ actions }}"
+                    action: notify.html5
+                    enabled: true
+                alias: Notify specific HTML5 devices (with actions)
+    enabled: true
+description: >
+  An easier way of sending notifications without having to remember the
+  formatting required by the notify platform.
+icon: mdi:notification-clear-all
+fields:
+  notification_type:
+    selector:
+      select:
+        options:
+          - value: notify
+            label: Send notification
+          - value: delete_alert
+            label: Background update (iOS/Android)
+          - value: clear_notification
+            label: Remove notifications with a tag
+          - value: remove_channel
+            label: Remove notification channel (Android)
+        mode: dropdown
+    name: Notification type
+    description: >-
+      Send, update, or clear notifications (Note: Background update will send a
+      notification without a visible toast, e.g. to silently update a badge)
+    default: notify
+  send_to:
+    selector:
+      select:
+        options:
+          - value: notify_family
+            label: Family
+          - value: notify_parents
+            label: Parents
+          - value: notify_parents_and_babysitter
+            label: Parents and babysitter
+          - value: notify_kids
+            label: Kids
+          - value: notify_william
+            label: William
+          - value: notify_amy
+            label: Amy
+          - value: notify_babysitter
+            label: Babysitter
+          - value: notify_tvs
+            label: TVs
+          - value: notify_tv_living_room
+            label: Living Room TV
+          - value: notify_tv_bedroom
+            label: Bedroom TV
+    name: Send to
+    description: Who should the notification be sent to?
+    required: true
+    default: notify_family
+  device_type:
+    selector:
+      select:
+        options:
+          - value: all
+            label: All devices
+          - value: mobile
+            label: Phones and tablets (via mobile app notifications)
+          - value: web
+            label: Web browsers (via HTML5 notifications)
+        mode: dropdown
+    name: Device type
+    description: Send to mobile devices, web browsers, or both
+    default: all
+    required: false
+  title:
+    selector:
+      text: null
+    name: Title
+    description: Notification title
+    required: false
+  subtitle:
+    selector:
+      text: null
+    name: Subtitle (iOS)
+    description: Notification subtitle (displayed below the title)
+  subject:
+    selector:
+      text: null
+    name: Subject (Android)
+    description: >-
+      Notification subject (Note: Depending on your device, this may take the
+      place of content that's longer than six lines)
+  message:
+    selector:
+      text:
+        multiline: true
+    name: Message
+    description: Notification message
+    required: true
+  tag:
+    selector:
+      text: null
+    name: Tag
+    description: For updating/replacing or clearing specific notifications
+  group:
+    selector:
+      text: null
+    name: Group/Channel (iOS/Android)
+    description: Group related notifications together (aka channel on Android)
+  interruption_level:
+    selector:
+      select:
+        options:
+          - value: passive
+            label: Passive (iOS) — don't wake screen
+          - value: active
+            label: Normal
+          - value: time-sensitive
+            label: Time sensitive (iOS) — override DND
+          - value: critical
+            label: Critical — override DND and mute
+        mode: dropdown
+    name: Interruption level (iOS/Android)
+    required: false
+    description: >-
+      Determines how the notification should be displayed when it's received,
+      allowing it to be delivered silently or break through features like do not
+      disturb (DND) or Focus profiles
+    default: active
+  critical_alert_volume:
+    selector:
+      number:
+        min: 0
+        max: 1
+        step: 0.01
+    name: Critical alert volume (iOS/Android)
+    description: >-
+      The volume level of the critical alert (on Android, anything less than 1
+      will use the default volume)
+  ttl:
+    selector:
+      number:
+        min: 0
+        max: 86400
+        step: 1
+    name: TTL (Web/Android)
+    description: >-
+      If not set, critical notifications will be set to 0 and non-critical to
+      86400
+  critical_alert_tts_text:
+    selector:
+      text: null
+    name: Critical alert TTS text (Android)
+    description: Read out an announcement when a critical alert is played
+  badge:
+    selector:
+      number:
+        min: 0
+        max: 1000000
+        step: 1
+        mode: box
+    name: Set badge count (iOS)
+    description: Set a badge number for the app icon (set to 0 to clear the badge)
+  notification_sound:
+    selector:
+      text: null
+    name: Notification sound (iOS)
+    description: >-
+      Play a custom notification sound when the notification is received. (Note:
+      the file name must refer to a notification sound that's been set up in the
+      Home Assistant app. To customize notification sounds on Android, edit the
+      settings for your specified group—known as a channel—on the device)
+  hide_notification_when_open:
+    selector:
+      boolean: {}
+    name: Hide notification when app is open (iOS)
+    description: >-
+      Suppresses the notification toast from being displayed when the Home
+      Assistant app is in the foreground (Note: iOS should also support
+      suppressing sound and badges, but this seems to be broken)
+  url:
+    selector:
+      text: null
+    name: URL
+    description: >-
+      When the notification is clicked, launch a URL (full or relative), OS
+      feature, app, deep link, entity info dialog, etc. See documentation for
+      all supported options.
+  image:
+    selector:
+      text: null
+    description: "URL to an image (Note: setting a video or audio file replaces this image)"
+    name: Image (iOS/Android)
+  video:
+    selector:
+      text: null
+    name: Video (iOS/Android)
+    description: "URL to a video (Note: setting an audio file replaces this video)"
+  audio:
+    selector:
+      text: null
+    name: Audio (iOS)
+    description: >-
+      URL to an audio file (Note: replaces all other types of media; may not
+      work despite developer docs saying it's supported on iOS)
+  camera:
+    selector:
+      entity:
+        filter:
+          - domain: camera
+    name: Camera (iOS)
+    description: >-
+      Displays a still image from the camera in the notification preview and the
+      live feed when expanded
+  map_latitude:
+    selector:
+      text: null
+    name: "Map: Latitude (iOS)"
+    description: The latitude of the pin to show on the map
+  map_longitude:
+    selector:
+      text: null
+    name: "Map: Longitude (iOS)"
+    description: The longitude of the pin to show on the map
+  map_latitude_delta:
+    selector:
+      text: {}
+    name: "Map: Latitude delta (iOS)"
+    description: The amount of north-to-south distance (in degrees) to display
+  map_longitude_delta:
+    selector:
+      text: {}
+    name: "Map: Longitude delta (iOS)"
+    description: The amount of east-to-west distance (in degrees) to display
+  map_second_latitude:
+    selector:
+      text: null
+    name: "Map: Second latitude (iOS)"
+    description: The latitude of the second pin to show on the map
+  map_second_longitude:
+    selector:
+      text: null
+    name: "Map: Second longitude (iOS)"
+    description: The longitude of the second pin to show on the map
+  map_shows_line_between_points:
+    selector:
+      boolean: {}
+    name: "Map: Show line between points (iOS)"
+    description: Display a line connecting the first and second pin
+  map_shows_compass:
+    selector:
+      boolean: {}
+    name: "Map: Show compass (iOS)"
+    description: Display a compass control on the map
+  map_shows_points_of_interest:
+    selector:
+      boolean: {}
+    name: "Map: Show points of interest (iOS)"
+    description: Display points-of-interest (POI) information on the map
+  map_shows_scale:
+    selector:
+      boolean: {}
+    name: "Map: Show scale (iOS)"
+    description: Show scale information on the map
+  map_shows_traffic:
+    selector:
+      boolean: {}
+    name: "Map: Show traffic (iOS)"
+    description: Display traffic information on the map
+  map_shows_user_location:
+    selector:
+      boolean: {}
+    name: "Map: Show user location (iOS)"
+    description: Attempt to display user's location on the map
+  hide_media_thumbnail:
+    selector:
+      boolean: {}
+    name: Hide media thumbnail (iOS)
+    description: >-
+      Hide the media thumbnail from the notification preview (media will only be
+      visible when expanding the notification)
+  icon:
+    selector:
+      text: null
+    name: Icon (Android)
+    description: >-
+      Replace the Home Assistant app icon with a URL to a custom icon (Note:
+      setting an image replaces this icon)
+  action_1_id:
+    selector:
+      text: null
+    name: "Action 1: ID"
+    description: The ID for your action (can be a variable)
+  action_1_title:
+    selector:
+      text: null
+    name: "Action 1: Title"
+    description: String shown in the UI
+  action_1_icon:
+    selector:
+      text: null
+    name: "Action 1: Icon"
+    description: sfsymbols (mobile-only) or a URL to an image
+  action_1_launch_uri:
+    selector:
+      text: null
+    name: "Action 1: Launch URI (iOS/Android)"
+    description: >-
+      Open a URL, Home Assistant page, or app (Note: For web endpoints, listen
+      for the clicked event instead)
+    required: false
+  action_1_accept_text_input:
+    selector:
+      boolean: {}
+    name: "Action 1: Accept text input (iOS/Android)"
+    description: Prompt user for text input when selecting the action
+    required: false
+  action_1_launch_app:
+    selector:
+      boolean: {}
+    name: "Action 1: Launch app (iOS)"
+    description: Enable to launch the Home Assistant app after selecting the action
+    required: false
+  action_1_authentication_required:
+    selector:
+      boolean: {}
+    name: "Action 1: Require authentication (iOS)"
+    description: Enable to require PIN/FaceID when selecting the action
+    required: false
+  action_1_use_red_text:
+    selector:
+      boolean: {}
+    name: "Action 1: Use red text (iOS)"
+    description: Enable to use red text (typically used to denote destructive actions)
+    required: false
+  action_2_id:
+    selector:
+      text: null
+    name: "Action 2: ID"
+    description: The ID for your action (can be a variable)
+  action_2_title:
+    selector:
+      text: null
+    name: "Action 2: Title"
+    description: String shown in the UI
+  action_2_icon:
+    selector:
+      text: null
+    name: "Action 2: Icon"
+    description: sfsymbols (mobile-only) or a URL to an image
+  action_2_launch_uri:
+    selector:
+      text: null
+    name: "Action 2: Launch URI (iOS/Android)"
+    description: >-
+      Open a URL, Home Assistant page, or app (Note: For web endpoints, listen
+      for the clicked event instead)
+    required: false
+  action_2_accept_text_input:
+    selector:
+      boolean: {}
+    name: "Action 2: Accept text input (iOS/Android)"
+    description: Prompt user for text input when selecting the action
+    required: false
+  action_2_launch_app:
+    selector:
+      boolean: {}
+    name: "Action 2: Launch app (iOS)"
+    description: Enable to launch the Home Assistant app after selecting the action
+    required: false
+  action_2_authentication_required:
+    selector:
+      boolean: {}
+    name: "Action 2: Require authentication (iOS)"
+    description: Enable to require PIN/FaceID when selecting the action
+    required: false
+  action_2_use_red_text:
+    selector:
+      boolean: {}
+    name: "Action 2: Use red text (iOS)"
+    description: Enable to use red text (typically used to denote destructive actions)
+    required: false
+  action_3_id:
+    selector:
+      text: null
+    name: "Action 3: ID (iOS/Android)"
+    description: The ID for your action (can be a variable)
+  action_3_title:
+    selector:
+      text: null
+    name: "Action 3: Title"
+    description: String shown in the UI
+  action_3_icon:
+    selector:
+      text: null
+    name: "Action 3: Icon"
+    description: sfsymbols (mobile-only) or a URL to an image
+  action_3_launch_uri:
+    selector:
+      text: null
+    name: "Action 3: Launch URI (iOS/Android)"
+    description: Open a URL, Home Assistant page, or app
+    required: false
+  action_3_accept_text_input:
+    selector:
+      boolean: {}
+    name: "Action 3: Accept text input (iOS/Android)"
+    description: Prompt user for text input when selecting the action
+    required: false
+  action_3_launch_app:
+    selector:
+      boolean: {}
+    name: "Action 3: Launch app (iOS)"
+    description: Enable to launch the Home Assistant app after selecting the action
+    required: false
+  action_3_authentication_required:
+    selector:
+      boolean: {}
+    name: "Action 3: Require authentication (iOS)"
+    description: Enable to require PIN/FaceID when selecting the action
+    required: false
+  action_3_use_red_text:
+    selector:
+      boolean: {}
+    name: "Action 3: Use red text (iOS)"
+    description: Enable to use red text (typically used to denote destructive actions)
+    required: false
+  action_4_id:
+    selector:
+      text: null
+    name: "Action 4: ID (iOS)"
+    description: The ID for your action (can be a variable)
+  action_4_title:
+    selector:
+      text: null
+    name: "Action 4: Title"
+    description: String shown in the UI
+  action_4_icon:
+    selector:
+      text: null
+    name: "Action 4: Icon"
+    description: sfsymbols (mobile-only) or a URL to an image
+  action_4_launch_uri:
+    selector:
+      text: null
+    name: "Action 4: Launch URI (iOS/Android)"
+    description: Open a URL, Home Assistant page, or app
+    required: false
+  action_4_accept_text_input:
+    selector:
+      boolean: {}
+    name: "Action 4: Accept text input (iOS/Android)"
+    description: Prompt user for text input when selecting the action
+    required: false
+  action_4_launch_app:
+    selector:
+      boolean: {}
+    name: "Action 4: Launch app (iOS)"
+    description: Enable to launch the Home Assistant app after selecting the action
+    required: false
+  action_4_authentication_required:
+    selector:
+      boolean: {}
+    name: "Action 4: Require authentication (iOS)"
+    description: Enable to require PIN/FaceID when selecting the action
+    required: false
+  action_4_use_red_text:
+    selector:
+      boolean: {}
+    name: "Action 4: Use red text (iOS)"
+    description: Enable to use red text (typically used to denote destructive actions)
+    required: false
+  action_5_id:
+    selector:
+      text: null
+    name: "Action 5: ID (iOS)"
+    description: The ID for your action (can be a variable)
+  action_5_title:
+    selector:
+      text: null
+    name: "Action 5: Title"
+    description: String shown in the UI
+  action_5_icon:
+    selector:
+      text: null
+    name: "Action 5: Icon"
+    description: sfsymbols (mobile-only) or a URL to an image
+  action_5_launch_uri:
+    selector:
+      text: null
+    name: "Action 5: Launch URI (iOS/Android)"
+    description: Open a URL, Home Assistant page, or app
+    required: false
+  action_5_accept_text_input:
+    selector:
+      boolean: {}
+    name: "Action 5: Accept text input (iOS/Android)"
+    description: Prompt user for text input when selecting the action
+    required: false
+  action_5_launch_app:
+    selector:
+      boolean: {}
+    name: "Action 5: Launch app (iOS)"
+    description: Enable to launch the Home Assistant app after selecting the action
+    required: false
+  action_5_authentication_required:
+    selector:
+      boolean: {}
+    name: "Action 5: Require authentication (iOS)"
+    description: Enable to require PIN/FaceID when selecting the action
+    required: false
+  action_5_use_red_text:
+    selector:
+      boolean: {}
+    name: "Action 5: Use red text (iOS)"
+    description: Enable to use red text (typically used to denote destructive actions)
+    required: false
+  action_6_id:
+    selector:
+      text: null
+    name: "Action 6: ID (iOS)"
+    description: The ID for your action (can be a variable)
+  action_6_title:
+    selector:
+      text: null
+    name: "Action 6: Title"
+    description: String shown in the UI
+  action_6_icon:
+    selector:
+      text: null
+    name: "Action 6: Icon"
+    description: sfsymbols (mobile-only) or a URL to an image
+  action_6_launch_uri:
+    selector:
+      text: null
+    name: "Action 6: Launch URI (iOS/Android)"
+    description: Open a URL, Home Assistant page, or app
+    required: false
+  action_6_accept_text_input:
+    selector:
+      boolean: {}
+    name: "Action 6: Accept text input (iOS/Android)"
+    description: Prompt user for text input when selecting the action
+    required: false
+  action_6_launch_app:
+    selector:
+      boolean: {}
+    name: "Action 6: Launch app (iOS)"
+    description: Enable to launch the Home Assistant app after selecting the action
+    required: false
+  action_6_authentication_required:
+    selector:
+      boolean: {}
+    name: "Action 6: Require authentication (iOS)"
+    description: Enable to require PIN/FaceID when selecting the action
+    required: false
+  action_6_use_red_text:
+    selector:
+      boolean: {}
+    name: "Action 6: Use red text (iOS)"
+    description: Enable to use red text (typically used to denote destructive actions)
+    required: false
+  action_7_id:
+    selector:
+      text: null
+    name: "Action 7: ID (iOS)"
+    description: The ID for your action (can be a variable)
+  action_7_title:
+    selector:
+      text: null
+    name: "Action 7: Title"
+    description: String shown in the UI
+  action_7_icon:
+    selector:
+      text: null
+    name: "Action 7: Icon"
+    description: sfsymbols (mobile-only) or a URL to an image
+  action_7_launch_uri:
+    selector:
+      text: null
+    name: "Action 7: Launch URI (iOS/Android)"
+    description: Open a URL, Home Assistant page, or app
+    required: false
+  action_7_accept_text_input:
+    selector:
+      boolean: {}
+    name: "Action 7: Accept text input (iOS/Android)"
+    description: Prompt user for text input when selecting the action
+    required: false
+  action_7_launch_app:
+    selector:
+      boolean: {}
+    name: "Action 7: Launch app (iOS)"
+    description: Enable to launch the Home Assistant app after selecting the action
+    required: false
+  action_7_authentication_required:
+    selector:
+      boolean: {}
+    name: "Action 7: Require authentication (iOS)"
+    description: Enable to require PIN/FaceID when selecting the action
+    required: false
+  action_7_use_red_text:
+    selector:
+      boolean: {}
+    name: "Action 7: Use red text (iOS)"
+    description: Enable to use red text (typically used to denote destructive actions)
+    required: false
+  action_8_id:
+    selector:
+      text: null
+    name: "Action 8: ID (iOS)"
+    description: The ID for your action (can be a variable)
+  action_8_title:
+    selector:
+      text: null
+    name: "Action 8: Title"
+    description: String shown in the UI
+  action_8_icon:
+    selector:
+      text: null
+    name: "Action 8: Icon"
+    description: sfsymbols (mobile-only) or a URL to an image
+  action_8_launch_uri:
+    selector:
+      text: null
+    name: "Action 8: Launch URI (iOS/Android)"
+    description: Open a URL, Home Assistant page, or app
+    required: false
+  action_8_accept_text_input:
+    selector:
+      boolean: {}
+    name: "Action 8: Accept text input (iOS/Android)"
+    description: Prompt user for text input when selecting the action
+    required: false
+  action_8_launch_app:
+    selector:
+      boolean: {}
+    name: "Action 8: Launch app (iOS)"
+    description: Enable to launch the Home Assistant app after selecting the action
+    required: false
+  action_8_authentication_required:
+    selector:
+      boolean: {}
+    name: "Action 8: Require authentication (iOS)"
+    description: Enable to require PIN/FaceID when selecting the action
+    required: false
+  action_8_use_red_text:
+    selector:
+      boolean: {}
+    name: "Action 8: Use red text (iOS)"
+    description: Enable to use red text (typically used to denote destructive actions)
+    required: false
+  action_9_id:
+    selector:
+      text: null
+    name: "Action 9: ID (iOS)"
+    description: The ID for your action (can be a variable)
+  action_9_title:
+    selector:
+      text: null
+    name: "Action 9: Title"
+    description: String shown in the UI
+  action_9_icon:
+    selector:
+      text: null
+    name: "Action 9: Icon"
+    description: sfsymbols (mobile-only) or a URL to an image
+  action_9_launch_uri:
+    selector:
+      text: null
+    name: "Action 9: Launch URI (iOS/Android)"
+    description: Open a URL, Home Assistant page, or app
+    required: false
+  action_9_accept_text_input:
+    selector:
+      boolean: {}
+    name: "Action 9: Accept text input (iOS/Android)"
+    description: Prompt user for text input when selecting the action
+    required: false
+  action_9_launch_app:
+    selector:
+      boolean: {}
+    name: "Action 9: Launch app (iOS)"
+    description: Enable to launch the Home Assistant app after selecting the action
+    required: false
+  action_9_authentication_required:
+    selector:
+      boolean: {}
+    name: "Action 9: Require authentication (iOS)"
+    description: Enable to require PIN/FaceID when selecting the action
+    required: false
+  action_9_use_red_text:
+    selector:
+      boolean: {}
+    name: "Action 9: Use red text (iOS)"
+    description: Enable to use red text (typically used to denote destructive actions)
+    required: false
+  action_10_id:
+    selector:
+      text: null
+    name: "Action 10: ID (iOS)"
+    description: The ID for your action (can be a variable)
+  action_10_title:
+    selector:
+      text: null
+    name: "Action 10: Title"
+    description: String shown in the UI
+  action_10_icon:
+    selector:
+      text: null
+    name: "Action 10: Icon"
+    description: sfsymbols (mobile-only) or a URL to an image
+  action_10_launch_uri:
+    selector:
+      text: null
+    name: "Action 10: Launch URI (iOS/Android)"
+    description: Open a URL, Home Assistant page, or app
+    required: false
+  action_10_accept_text_input:
+    selector:
+      boolean: {}
+    name: "Action 10: Accept text input (iOS/Android)"
+    description: Prompt user for text input when selecting the action
+    required: false
+  action_10_launch_app:
+    selector:
+      boolean: {}
+    name: "Action 10: Launch app (iOS)"
+    description: Enable to launch the Home Assistant app after selecting the action
+    required: false
+  action_10_authentication_required:
+    selector:
+      boolean: {}
+    name: "Action 10: Require authentication (iOS)"
+    description: Enable to require PIN/FaceID when selecting the action
+    required: false
+  action_10_use_red_text:
+    selector:
+      boolean: {}
+    name: "Action 10: Use red text (iOS)"
+    description: Enable to use red text (typically used to denote destructive actions)
+    required: false
+  ios_shortcut_name:
+    selector:
+      text: null
+    name: "iOS Shortcut: Name"
+    description: Runs the iOS shortcut matching this name when the notification is selected
+  ios_shortcut_key_1_name:
+    selector:
+      text: null
+    name: "iOS Shortcut: Key 1 name"
+    description: The name of the first custom key to send to the shortcut
+  ios_shortcut_key_1_value:
+    selector:
+      text: null
+    name: "iOS Shortcut: Key 1 value"
+    description: The data to pass to the shortcut for this key (must be a string)
+  ios_shortcut_key_2_name:
+    selector:
+      text: null
+    name: "iOS Shortcut: Key 2 name"
+    description: The name of the first custom key to send to the shortcut
+  ios_shortcut_key_2_value:
+    selector:
+      text: null
+    name: "iOS Shortcut: Key 2 value"
+    description: The data to pass to the shortcut for this key (must be a string)
+  ios_shortcut_key_3_name:
+    selector:
+      text: null
+    name: "iOS Shortcut: Key 3 name"
+    description: The name of the first custom key to send to the shortcut
+  ios_shortcut_key_3_value:
+    selector:
+      text: null
+    name: "iOS Shortcut: Key 3 value"
+    description: The data to pass to the shortcut for this key (must be a string)
+  ios_shortcut_key_4_name:
+    selector:
+      text: null
+    name: "iOS Shortcut: Key 4 name"
+    description: The name of the first custom key to send to the shortcut
+  ios_shortcut_key_4_value:
+    selector:
+      text: null
+    name: "iOS Shortcut: Key 4 value"
+    description: The data to pass to the shortcut for this key (must be a string)
+  ios_shortcut_key_5_name:
+    selector:
+      text: null
+    name: "iOS Shortcut: Key 5 name"
+    description: The name of the first custom key to send to the shortcut
+  ios_shortcut_key_5_value:
+    selector:
+      text: null
+    name: "iOS Shortcut: Key 5 value"
+    description: The data to pass to the shortcut for this key (must be a string)
+mode: parallel
+max: 100
