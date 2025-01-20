@@ -1,5 +1,5 @@
 # Home Assistant: Send Notification script
-Home Assistant script template for sending a notification to Home Assistant mobile apps or HTML5 endpoints
+Home Assistant script template for sending a notification to Home Assistant mobile apps or HTML5 endpoints.
 
 ## Overview
 I use notifications all of the time, and they’re very powerful. But they can also be very hard to use. Every time I create a new notification I have to look up the YAML for specifying a tag or group, and more advanced features like critical notifications, badging, or including an image are even more complex. Features vary by platform, and you often have to carefully read through the [developer docs](https://companion.home-assistant.io/docs/notifications/notifications-basic) multiple times to understand all of the capabilities.
