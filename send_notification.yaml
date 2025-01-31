@@ -58,6 +58,7 @@ sequence:
       map_shows_traffic: "{{ map_shows_traffic | default(false) }}"
       map_shows_user_location: "{{ map_shows_user_location | default(false) }}"
       tag: "{{ tag | default(None) }}"
+      tag_html5: "{{ '' if ignore_tag_html5 else tag }}"
       group: "{{ group | default(None) }}"
       critical: "{{ true if interruption_level == 'critical' else false }}"
       priority: "{{ 'high' if critical else 'normal' }}"
@@ -349,7 +350,7 @@ sequence:
                       message: "{{ message }}"
                       data:
                         url: "{{ url }}"
-                        tag: "{{ tag }}"
+                        tag: "{{ tag_html5 }}"
                         group: "{{ group }}"
                         priority: "{{ priority }}"
                         badge: "{{ badge }}"
@@ -374,7 +375,7 @@ sequence:
                       target: "{{ html5_endpoints }}"
                       data:
                         url: "{{ url }}"
-                        tag: "{{ tag }}"
+                        tag: "{{ tag_html5 }}"
                         group: "{{ group }}"
                         priority: "{{ priority }}"
                         ttl: "{{ ttl }}"
@@ -398,7 +399,7 @@ sequence:
                       message: "{{ message }}"
                       data:
                         url: "{{ url }}"
-                        tag: "{{ tag }}"
+                        tag: "{{ tag_html5 }}"
                         group: "{{ group }}"
                         priority: "{{ priority }}"
                         ttl: "{{ ttl }}"
@@ -424,7 +425,7 @@ sequence:
                       target: "{{ html5_endpoints }}"
                       data:
                         url: "{{ url }}"
-                        tag: "{{ tag }}"
+                        tag: "{{ tag_html5 }}"
                         group: "{{ group }}"
                         priority: "{{ priority }}"
                         ttl: "{{ ttl }}"
@@ -530,6 +531,14 @@ fields:
       text: null
     name: Tag
     description: For updating/replacing or clearing specific notifications
+  ignore_tag_html5:
+    selector:
+      boolean: {}
+    name: Ignore tag for browsers
+    description: >-
+      Enabling will not tag the notification for browsers (HTML5). This is
+      helpful for notifications you want to ensure are always shown so updates
+      in the notification center don't go unnoticed.
   group:
     selector:
       text: null
