@@ -1,3 +1,6 @@
+# Blue Series blueprint is an adaptation of @fxlt’s fantastic Inovelli VZM31-SN Blue Series 2-1 Switch blueprint to support more models than just the Dimmer switch. As with the original blueprint, it supports ZHA.
+# Source: https://community.home-assistant.io/t/zha-inovelli-vzm31-sn-blue-series-2-1-switch/479148
+
 blueprint:
   name: "Inovelli Blue Series Switches (ZHA)"
   description: Create automations for the Inovelli Blue switches using ZHA.
