@@ -13,6 +13,6 @@ Please see the blueprints above for Inovelli Blue and Red series switches. Bluep
 * Other models _should_ work, but have not been tested
 
 ## Special thanks
-Blue Series blueprint is an adaptation of @fxlt’s fantastic [Inovelli VZM31-SN Blue Series 2-1 Switch blueprint](https://community.home-assistant.io/t/zha-inovelli-vzm31-sn-blue-series-2-1-switch/479148) to support more models than just teh Dimmer switch. As with the original blueprint, it supports ZHA.
+Blue Series blueprint is an adaptation of @fxlt’s fantastic [Inovelli VZM31-SN Blue Series 2-1 Switch blueprint](https://community.home-assistant.io/t/zha-inovelli-vzm31-sn-blue-series-2-1-switch/479148) to support more models than just the Dimmer switch. As with the original blueprint, it supports ZHA.
 
 Red Series blueprint adapts the Blue Series blueprint for Z-Wave with help from [rohankapoorcom's blueprint](https://github.com/rohankapoorcom/homeassistant-config/blob/27ac149c16a2aadfb59e1fe790824dc181581348/blueprints/automation/rohankapoorcom/inovelli-vzw31-sn-red-series-switch.yaml).
