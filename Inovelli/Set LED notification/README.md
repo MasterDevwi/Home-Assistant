@@ -1,5 +1,5 @@
 # Set Inovelli Blue/Red LED Notification (ZHA/Z-Wave) script
-A Home Assistant script allowing you to define custom presets for the LED notifications on the Home Assistant Blue/Red Series switches using ZHA or Z-Wave
+A Home Assistant script allowing you to define custom presets for the LED notifications on the Home Assistant Blue/Red Series switches using ZHA or Z-Wave.
 
 ## Pre-requisites 
 * [Inovelli Blue or Red Series switches](https://inovelli.com/)
