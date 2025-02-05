@@ -1,1 +1,1 @@
-## Scripts and blueprints for Inovelli devices
+Scripts and blueprints for Inovelli devices.
