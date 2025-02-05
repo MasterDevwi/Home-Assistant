@@ -1,0 +1,730 @@
+# I originally made this long ago and decided to share it. I think parts of it were adapted from nwithan8's script (source: https://community.home-assistant.io/t/zha-inovelli-blue-series-2-1-switch-led-notification-script/579927), but it's been heavily modified
+
+fields:
+  target:
+    name: Target
+    description: >-
+      Inovelli devices, entities, and/or areas with Inovelli devices to set
+      effects
+    selector:
+      target:
+        device:
+          - integration: zha
+            manufacturer: Inovelli
+          - integration: zwave_js
+            manufacturer: Inovelli
+        entity:
+          - integration: zha
+            domain:
+              - light
+              - fan
+          - integration: zwave_js
+            domain:
+              - light
+              - fan
+    required: true
+  preset:
+    selector:
+      select:
+        options:
+          - label: Custom
+            value: custom
+          - label: "Clear: Full bar + individual LEDs"
+            value: clear_hard
+          - label: "Clear: Full bar"
+            value: clear_all
+          - label: "Clear: Individual LEDs"
+            value: clear_individual
+          - label: "Lighting: On"
+            value: light-on
+          - label: "Lighting: On (override)"
+            value: light-override
+          - label: "Lighting: On + door open"
+            value: door-open-light-on
+          - label: "Security: Door open"
+            value: door-open
+          - label: "Security: Door unlocked"
+            value: door-unlocked
+          - label: "Security: Armed"
+            value: alarm-armed
+          - label: "Security: Armed with entry delay"
+            value: alarm-armed-entry-delay
+          - label: "Sleep Mode: Enabled"
+            value: sleep-mode-activated
+          - label: "Sleep Mode: On (persistent)"
+            value: sleep-mode-on
+          - label: "Sleep Mode: Disabled"
+            value: sleep-mode-deactivated
+          - label: "Sleep Mode: Going to Sleep"
+            value: going-to-sleep
+          - label: Specialty mode (theater, podcast, etc.)
+            value: specialty-mode
+          - label: Motion detected
+            value: motion-detected
+          - label: Waiting...
+            value: waiting
+          - label: Error occured
+            value: error
+    name: Preset
+    description: >-
+      Select a preset (setting options below will override that portion of the
+      preset)
+    required: true
+    default: custom
+  led:
+    name: LEDs
+    description: Choose which LED to control
+    default: All
+    selector:
+      select:
+        custom_value: true
+        options:
+          - label: All
+            value: All
+          - label: Top (LED 6)
+            value: led 6
+          - label: 2nd from top (LED 5)
+            value: led 5
+          - label: 3rd from top (LED 4)
+            value: led 4
+          - label: Middle (LED 3)
+            value: led 3
+          - label: 3rd from bottom (LED 2)
+            value: led 2
+          - label: 2nd from bottom (LED 1)
+            value: led 1
+          - label: Bottom (LED 0)
+            value: led 0
+    required: false
+  effect:
+    name: Effect
+    description: Choose LED effect to apply
+    default: Fast Blink
+    selector:
+      select:
+        custom_value: true
+        options:
+          - Clear
+          - "Off"
+          - Solid
+          - Slow Blink
+          - Medium Blink
+          - Fast Blink
+          - Pulse
+          - Aurora
+          - Slow Falling
+          - Medium Falling
+          - Fast Falling
+          - Slow Rising
+          - Medium Rising
+          - Fast Rising
+          - Slow Siren
+          - Fast Siren
+          - Chase
+          - Slow Chase
+          - Medium Chase
+          - Fast Chase
+          - Open-Close
+          - Small-Big
+        multiple: false
+  color:
+    name: LED color
+    default: Red
+    selector:
+      select:
+        custom_value: true
+        options:
+          - Red
+          - Orange
+          - Yellow
+          - Green
+          - Cyan
+          - Teal
+          - Blue
+          - Purple
+          - Light Pink
+          - Pink
+          - White
+  color_custom:
+    name: Custom LED color
+    description: From 0 (red) to 255 (white) — overrides friendly color name
+    default: 0
+    example: "0"
+    selector:
+      number:
+        min: 0
+        max: 255
+  level:
+    name: Brightness level
+    description: Value from 0% (off) to 100%
+    default: 33
+    example: "33"
+    selector:
+      number:
+        min: 0
+        max: 100
+  duration:
+    name: Duration
+    description: How long should the effect run?
+    default: 2 seconds
+    selector:
+      select:
+        custom_value: true
+        options:
+          - Indefinitely
+          - 1 second
+          - 2 seconds
+          - 3 seconds
+          - 4 seconds
+          - 5 seconds
+          - 6 seconds
+          - 7 seconds
+          - 8 seconds
+          - 9 seconds
+          - 10 seconds
+          - 15 seconds
+          - 20 seconds
+          - 25 seconds
+          - 30 seconds
+          - 35 seconds
+          - 40 seconds
+          - 45 seconds
+          - 50 seconds
+          - 55 seconds
+          - 1 minute
+          - 2 minutes
+          - 3 minutes
+          - 4 minutes
+          - 5 minutes
+          - 6 minutes
+          - 7 minutes
+          - 8 minutes
+          - 9 minutes
+          - 10 minutes
+          - 15 minutes
+          - 20 minutes
+          - 25 minutes
+          - 30 minutes
+          - 35 minutes
+          - 40 minutes
+          - 45 minutes
+          - 50 minutes
+          - 55 minutes
+          - 1 hour
+          - 2 hours
+          - 3 hours
+          - 4 hours
+          - 5 hours
+          - 6 hours
+          - 7 hours
+          - 8 hours
+          - 9 hours
+          - 10 hours
+          - 15 hours
+          - 20 hours
+          - 1 day
+          - 2 days
+          - 3 days
+          - 4 days
+          - 5 days
+variables:
+  led_defined: "{{ led is defined }}"
+  effect_defined: "{{ effect is defined }}"
+  color_defined: "{{ color is defined or color_custom is defined }}"
+  level_defined: "{{ level is defined }}"
+  duration_defined: "{{ duration is defined }}"
+  target: "{{ target|default([])|map(lower) }}"
+  area: "{{ target.area_id|default([])|lower }}"
+  device: "{{ target.device_id|default([])|lower }}"
+  entity: "{{ target.entity_id|default([])|lower }}"
+  entity_list: |
+    {% set switch = namespace(entities=[]) %}
+    {# Areas #} {% set areas = namespace(areas=[]) %} {% if area %}
+      {# Convert to a list #}
+      {% if ',' in area %}
+        {% set areanum = area.split(',') | count %}
+        {% for i in range(0,areanum) %}
+          {% set areas.areas = areas.areas + [area.split(',')[i]|string|trim ] %}
+        {% endfor %}
+      {% elif area[0]|count == 1 %}
+        {# if the first item in the list has only a single character, it can't be a valid entity #}
+        {% set areas.areas = areas.areas + [area|string|trim] %}
+      {% else %}
+        {% set areas.areas = area %}
+      {% endif %}
+      {# Detect switches #}
+      {% for area in areas.areas %}
+        {% for ent in area_entities(area) %}
+          {% if (device_attr(ent, 'manufacturer') == 'Inovelli') and ent.split('.')[0] == 'light' %}
+              {% set switch.entities = switch.entities + [ent|string|trim] %}
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    {% endif %}
+    {# Devices #} {% set devices = namespace(devices=[]) %} {% if device %}
+      {# Convert to a list #}
+      {% if ',' in device %}
+        {% set devicenum = device.split(',') | count %}
+        {% for i in range(0,devicenum) %}
+          {% set devices.devices = devices.devices + [device.split(',')[i]|string|trim ] %}
+        {% endfor %}
+      {% elif device[0]|count == 1 %} {# if the first item in the list has only a single character, it can't be a valid entity #}
+        {% set devices.devices = devices.devices + [device|string|trim] %}
+      {% else %}
+        {% set devices.devices = device %}
+      {% endif %}
+      {# Detect switches #}
+      {% for device in devices.devices %}
+        {% for ent in device_entities(device) %}
+          {% if (device_attr(ent, 'manufacturer') == 'Inovelli') and ent.split('.')[0] == 'light' %}
+            {% set switch.entities = switch.entities + [ent|string|trim] %}
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    {% endif %}
+    {# Entities #} {% set entities = namespace(entities=[]) %} {% if entity %}
+      {# Convert to a list #}
+      {% if ',' in entity %}
+        {% set entitynum = entity.split(',') | count %}
+        {% for i in range(0, entitynum) %}
+          {% set entities.entities = entities.entities + [entity.split(',')[i]|string|trim ] %}
+        {% endfor %}
+      {% elif entity[0]|count == 1 %} {# if the first item in the list has only a single character, it can't be a valid entity #}
+        {% set entities.entities = entities.entities + [entity|string|trim] %}
+      {% else %}
+        {% set entities.entities = entity %}
+      {% endif %}
+      {# Detect switches #}
+      {% for ent in entities.entities %}
+        {% if (device_attr(ent, 'manufacturer') == 'Inovelli') and ent.split('.')[0] == 'light' %}
+          {% set switch.entities = switch.entities + [ent|string|trim] %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    {{ switch.entities|unique|list|lower }}
+  leds:
+    all: -1
+    led 0: 0
+    led 1: 1
+    led 2: 2
+    led 3: 3
+    led 4: 4
+    led 5: 5
+    led 6: 6
+  led: "{{ led|default(\"all\") }}"
+  led_value: |-
+    {% if led|int(default=-2) == -2 %}
+      {{ leds[led|lower]|int(default=-1) }}
+    {% else %}
+      {{ led|int(default=-1) }}
+    {% endif %}
+  level: "{{ level|default(100) }}"
+  colors:
+    red: 1
+    orange: 21
+    yellow: 42
+    green: 85
+    cyan: 127
+    teal: 145
+    blue: 170
+    purple: 195
+    light pink: 220
+    lightpink: 220
+    pink: 234
+    white: 255
+  color: "{{ color|default(\"red\") }}"
+  color_custom: "{{ color_custom|default(-1) }}"
+  color_value: |-
+    {% if color_custom == -1 %}
+      {% if color|int(default=-1) == -1 %}
+        {{ colors[color|lower]|int(default=1) }}
+      {% else %}
+        {{ color|int(default=1) }}
+      {% endif %}
+    {% else %}
+      {{ color_custom }}
+    {% endif %}
+  effects:
+    "off": 0
+    clear: 255
+    solid: 1
+    slow blink: 3
+    medium blink: 15
+    fast blink: 2
+    pulse: 4
+    aurora: 8
+    slow falling: 9
+    medium falling: 10
+    fast falling: 11
+    slow rising: 12
+    medium rising: 13
+    fast rising: 14
+    chase: 5
+    slow chase: 16
+    medium chase: 5
+    fast chase: 17
+    fast siren: 18
+    slow siren: 19
+    open-close: 6
+    small-big: 7
+  effect: "{{ effect|default(\"fast blink\") }}"
+  effect_value: |-
+    {% if effect|lower in effects %}
+      {{ effects[effect|lower] }}
+    {% else %}
+      {{ effect|lower }}
+    {% endif %}
+  durations:
+    1 second: 1
+    2 seconds: 2
+    3 seconds: 3
+    4 seconds: 4
+    5 seconds: 5
+    6 seconds: 6
+    7 seconds: 7
+    8 seconds: 8
+    9 seconds: 9
+    10 seconds: 10
+    15 seconds: 15
+    20 seconds: 20
+    25 seconds: 25
+    30 seconds: 30
+    35 seconds: 35
+    40 seconds: 40
+    45 seconds: 45
+    50 seconds: 50
+    55 seconds: 55
+    1 minute: 60
+    2 minutes: 62
+    3 minutes: 63
+    4 minutes: 64
+    5 minutes: 65
+    6 minutes: 66
+    7 minutes: 67
+    8 minutes: 68
+    9 minutes: 69
+    10 minutes: 70
+    15 minutes: 75
+    20 minutes: 80
+    25 minutes: 85
+    30 minutes: 90
+    35 minutes: 95
+    40 minutes: 100
+    45 minutes: 105
+    50 minutes: 110
+    55 minutes: 115
+    1 hour: 120
+    2 hours: 122
+    3 hours: 123
+    4 hours: 124
+    5 hours: 125
+    6 hours: 126
+    7 hours: 127
+    8 hours: 128
+    9 hours: 129
+    10 hours: 130
+    15 hours: 135
+    20 hours: 140
+    1 day: 144
+    2 days: 168
+    3 days: 192
+    4 days: 216
+    5 days: 240
+    indefinitely: 255
+  duration: "{{ duration|default(\"2 seconds\") }}"
+  duration_value: |-
+    {% if duration|int(default=-1) == -1 %}
+      {{ durations[duration|lower]|int(default=10) }}
+    {% else %}
+      {{ duration|int(default=10) }}
+    {% endif %}
+sequence:
+  - condition: template
+    value_template: |
+      {{ entity_list|count > 0 }}
+    alias: Confirm at least one device was found
+  - variables:
+      presets:
+        clear_hard:
+          led_number: -1
+          led_effect: "{{ effects['clear'] }}"
+          led_color: 255
+          led_level: 0
+          led_duration: 0
+        clear_all:
+          led_number: -1
+          led_effect: "{{ effects['clear'] }}"
+          led_color: 255
+          led_level: 0
+          led_duration: 0
+        clear_individual:
+          led_number: 0
+          led_effect: "{{ effects['clear'] }}"
+          led_color: 255
+          led_level: 0
+          led_duration: 0
+        light-on:
+          led_number: -1
+          led_effect: "{{ effects['solid'] }}"
+          led_color: 170
+          led_level: 33
+          led_duration: 255
+        light-override:
+          led_number: -1
+          led_effect: "{{ effects['slow siren'] }}"
+          led_color: 170
+          led_level: 33
+          led_duration: 255
+        door-open-light-on:
+          led_number: -1
+          led_effect: "{{ effects['solid'] }}"
+          led_color: 5
+          led_level: 33
+          led_duration: 255
+        door-open:
+          led_number: -1
+          led_effect: "{{ effects['pulse'] }}"
+          led_color: 5
+          led_level: 33
+          led_duration: 255
+        door-unlocked:
+          led_number: -1
+          led_effect: "{{ effects['chase'] }}"
+          led_color: 5
+          led_level: 33
+          led_duration: 255
+        alarm-armed:
+          led_number: -1
+          led_effect: "{{ effects['slow siren'] }}"
+          led_color: 0
+          led_level: 33
+          led_duration: 255
+        alarm-armed-entry-delay:
+          led_number: -1
+          led_effect: "{{ effects['solid'] }}"
+          led_color: 0
+          led_level: 33
+          led_duration: 255
+        sleep-mode-activated:
+          led_number: -1
+          led_effect: "{{ effects['open-close'] }}"
+          led_color: 0
+          led_level: 33
+          led_duration: 4
+        sleep-mode-on:
+          led_number: 0
+          led_effect: "{{ effects['solid'] }}"
+          led_color: 0
+          led_level: 33
+          led_duration: 255
+        sleep-mode-deactivated:
+          led_number: -1
+          led_effect: "{{ effects['fast blink'] }}"
+          led_color: 0
+          led_level: 33
+          led_duration: 1
+        going-to-sleep:
+          led_number: -1
+          led_effect: "{{ effects['slow falling'] }}"
+          led_color: 0
+          led_level: 5
+          led_duration: 255
+        specialty-mode:
+          led_number: -1
+          led_effect: "{{ effects['solid'] }}"
+          led_color: 195
+          led_level: 5
+          led_duration: 255
+        motion-detected:
+          led_number: -1
+          led_effect: "{{ effects['small-big'] }}"
+          led_color: 133
+          led_level: 33
+          led_duration: 3
+        waiting:
+          led_number: -1
+          led_effect: "{{ effects['fast falling'] }}"
+          led_color: 195
+          led_level: 33
+          led_duration: 255
+        error:
+          led_number: -1
+          led_effect: "{{ effects['fast blink'] }}"
+          led_color: 255
+          led_level: 33
+          led_duration: 1
+    alias: Define presets
+  - variables:
+      use_preset: "{{ preset is defined and preset != 'custom' }}"
+      selected_led: >-
+        {{ presets[preset]['led_number'] if use_preset and not led_defined else
+        led_value }}
+      selected_effect: >-
+        {{ presets[preset]['led_effect'] if use_preset and not effect_defined
+        else effect_value }}
+      selected_color: >-
+        {{ presets[preset]['led_color'] if use_preset and not color_defined else
+        color_value }}
+      selected_level: >-
+        {{ presets[preset]['led_level'] if use_preset and not level_defined else
+        level }}
+      selected_duration: >-
+        {{ presets[preset]['led_duration'] if use_preset and not
+        duration_defined else duration_value }}
+      payload_zigbee: |-
+        {% if selected_led == -1 %}
+          {% set payload_data = {
+            "led_effect": selected_effect,
+            "led_color": selected_color,
+            "led_level": selected_level,      
+            "led_duration": selected_duration,
+            } %}
+        {% else %}
+          {% set payload_data = {
+            "led_number": selected_led,
+            "led_effect": selected_effect,
+            "led_color": selected_color,
+            "led_level": selected_level,      
+            "led_duration": selected_duration,
+            } %}
+        {% endif %}    
+        {{ payload_data }}
+      payload_zwave: >-
+        {{ (selected_effect * 256 * 256 * 256) + (selected_color * 256 * 256) +
+        (selected_level * 256) + selected_duration | float }}
+      map_zwave_led_to_param:
+        "0": "64"
+        "1": "69"
+        "2": "74"
+        "3": "79"
+        "4": "84"
+        "5": "89"
+        "6": "94"
+        "-1": "99"
+    alias: Define payload (YAML has full variable definitions)
+    enabled: true
+  - alias: Set/clear the LEDs for each selected device
+    repeat:
+      for_each: "{{ entity_list }}"
+      sequence:
+        - variables:
+            is_zha: "{{ repeat.item in integration_entities('zha') }}"
+            is_zwave: "{{ repeat.item in integration_entities('zwave_js') }}"
+          alias: Determine the integration type
+        - alias: Set the LEDs based on the integration type
+          choose:
+            - conditions:
+                - condition: template
+                  value_template: "{{ is_zha }}"
+                  alias: If the integration type is ZHA
+              sequence:
+                - data:
+                    ieee: |
+                      {{ (device_attr(repeat.item, "identifiers")|list).0.1 }}
+                    endpoint_id: 1
+                    cluster_id: 64561
+                    cluster_type: in
+                    command: >
+                      {{ iif(preset == 'custom' and led_value == -1, 1,
+                      iif('led_number' in presets[preset] and
+                      presets[preset]['led_number'] == -1, 1, 3)) }}
+                    command_type: server
+                    params: "{{ payload_zigbee }}"
+                    manufacturer: 4655
+                  action: zha.issue_zigbee_cluster_command
+                  alias: Set the LEDs (ZHA)
+                  enabled: true
+              alias: ZHA
+            - conditions:
+                - alias: If the integration type is Z-Wave
+                  condition: template
+                  value_template: "{{ is_zwave }}"
+              sequence:
+                - data:
+                    command_class: "112"
+                    method_name: set
+                    parameters:
+                      - parameter: "{{ map_zwave_led_to_param[selected_led|string] }}"
+                        value: "{{ payload_zwave }}"
+                        valueSize: 4
+                        valueFormat: 1
+                  target:
+                    entity_id: "{{ repeat.item }}"
+                  action: zwave_js.invoke_cc_api
+                  alias: Set the LEDs (Z-Wave)
+              alias: Z-Wave
+          enabled: true
+        - alias: Clear individual LEDs if selected
+          if:
+            - alias: >-
+                The user chose Clear Individual LEDs or a Hard Clear (clears
+                both all and individual LEDs)
+              condition: template
+              value_template: >-
+                {{ preset is defined and (preset == 'clear_hard' or preset ==
+                'clear_individual') }}
+          then:
+            - variables:
+                device_loop: "{{repeat.item}}"
+              alias: Save the device since we're going to do recursive loop
+            - alias: Repeat for each of the LEDs
+              repeat:
+                count: 7
+                sequence:
+                  - alias: Clear the individual LED based on the integration type
+                    choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ is_zha }}"
+                            alias: If the integration type is ZHA
+                        sequence:
+                          - data:
+                              ieee: >
+                                {{ (device_attr(device_loop,
+                                "identifiers")|list).0.1 }}
+                              endpoint_id: 1
+                              cluster_id: 64561
+                              cluster_type: in
+                              command: 3
+                              command_type: server
+                              params:
+                                led_number: "{{ repeat.index -1 }}"
+                                led_effect: "{{ effects['clear'] }}"
+                                led_color: 0
+                                led_level: 0
+                                led_duration: 0
+                              manufacturer: 4655
+                            action: zha.issue_zigbee_cluster_command
+                            alias: Clear the individual LED (ZHA)
+                            enabled: true
+                        alias: ZHA
+                      - conditions:
+                          - alias: If the integration type is Z-Wave
+                            condition: template
+                            value_template: "{{ is_zwave }}"
+                        sequence:
+                          - data:
+                              command_class: "112"
+                              method_name: set
+                              parameters:
+                                - parameter: >-
+                                    {{
+                                    map_zwave_led_to_param[(repeat.index-1)|string]
+                                    }}
+                                  value: 4282475766
+                                  valueSize: 4
+                                  valueFormat: 1
+                            target:
+                              entity_id: "{{ device_loop }}"
+                            action: zwave_js.invoke_cc_api
+                            alias: Clear the individual LED (Z-Wave)
+                        alias: Z-Wave
+                    enabled: true
+              enabled: true
+          enabled: true
+icon: mdi:led-on
+mode: parallel
+max_exceeded: silent
+max: 100
+alias: Set Inovelli Blue/Red LED Notification
+description: Sets the notification LEDs on Inovelli Blue/Red light switches.
