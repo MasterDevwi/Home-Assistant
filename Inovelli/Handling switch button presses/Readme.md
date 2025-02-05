@@ -1,7 +1,7 @@
 # Blueprints for handling switch button presses
 Please see the blueprints above for Inovelli Blue and Red series switches. Blueprints support all Blue and Red Series switches, although I have not personally tested all of the Red models.
 
-## Confirmed models these scripts support include:
+## Confirmed models these scripts support
 ### Blue Series
 * Dimmer (VZM31-SN)
 * Fan (VZM35-SN)
@@ -10,3 +10,4 @@ Please see the blueprints above for Inovelli Blue and Red series switches. Bluep
 
 ### Red Series
 * mmWave (VZW32-SN)
+* Other models _should_ work, but have not been tested
