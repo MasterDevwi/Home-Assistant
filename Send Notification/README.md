@@ -1,4 +1,4 @@
-# Home Assistant: Send Notification script
+Send Notification script
 Home Assistant script template for sending a notification to Home Assistant mobile apps or HTML5 endpoints.
 
 ## Overview
