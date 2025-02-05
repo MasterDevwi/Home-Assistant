@@ -1,0 +1,209 @@
+# Based off of fxit's blueprint on the Home Assistant Community, which I initially adapted for all Blues via ZHA and now have adapted to support Reds via Z-Wave with help from rohankapoorcom's blueprint
+# Source: https://community.home-assistant.io/t/zha-inovelli-blue-series-switch-for-dimmer-vzm-31-fan-vzm-35-and-on-off-vzm-30-switches/627953
+# Source: https://github.com/rohankapoorcom/homeassistant-config/blob/27ac149c16a2aadfb59e1fe790824dc181581348/blueprints/automation/rohankapoorcom/inovelli-vzw31-sn-red-series-switch.yaml
+blueprint:
+  name: "Inovelli Red Series Switches (Z-Wave)"
+  description: Create automations for the Inovelli Red switches using Z-Wave.
+  domain: automation
+  input:
+    inovelli_switch:
+      name: Inovelli Red switch
+      description: "List of available Inovelli Red switches."
+      selector:
+        device:
+          integration: zwave_js
+    ## Pressed Once
+    button_1:
+      name: Down paddle pressed
+      description: "Action to run when down paddle is pressed once."
+      default: []
+      selector:
+        action:
+    button_2:
+      name: Up paddle pressed
+      description: "Action to run when up paddle is pressed once."
+      default: []
+      selector:
+        action:
+    button_3:
+      name: Config button pressed
+      description: "Action to run when config button is pressed once."
+      default: []
+      selector:
+        action:
+    ## Held
+    button_1_hold:
+      name: Down paddle held
+      description: "Action to run when down paddle is held."
+      default: []
+      selector:
+        action:
+    button_2_hold:
+      name: Up paddle held
+      description: "Action to run when up paddle is held."
+      default: []
+      selector:
+        action:
+    button_3_hold:
+      name: Config button held
+      description: "Action to run when config button is held."
+      default: []
+      selector:
+        action:
+    ## Released
+    button_1_release:
+      name: Down paddle released
+      description: "Action to run when down paddle is released."
+      default: []
+      selector:
+        action:
+    button_2_release:
+      name: Up paddle released
+      description: "Action to run when up paddle is released."
+      default: []
+      selector:
+        action:
+    button_3_release:
+      name: Config button released
+      description: "Action to run when config button is released."
+      default: []
+      selector:
+        action:
+    ## Pressed Twice
+    button_1_double:
+      name: Down paddle pressed twice
+      description: "Action to run when down paddle is pressed twice."
+      default: []
+      selector:
+        action:
+    button_2_double:
+      name: Up paddle pressed twice
+      description: "Action to run when up paddle is pressed twice."
+      default: []
+      selector:
+        action:
+    button_3_double:
+      name: Config button pressed twice
+      description: "Action to run when config button is pressed twice."
+      default: []
+      selector:
+        action:
+    ## Pressed Thrice
+    button_1_triple:
+      name: Down paddle pressed three times
+      description: "Action to run when down paddle is pressed three times."
+      default: []
+      selector:
+        action:
+    button_2_triple:
+      name: Up paddle pressed three times
+      description: "Action to run when up paddle is pressed three times."
+      default: []
+      selector:
+        action:
+    button_3_triple:
+      name: Config button pressed three times
+      description: "Action to run when config button is pressed three times."
+      default: []
+      selector:
+        action:
+    ## Pressed Four Times
+    button_1_quadruple:
+      name: Down paddle pressed four times
+      description: "Action to run when down paddle is pressed four times."
+      default: []
+      selector:
+        action:
+    button_2_quadruple:
+      name: Up paddle pressed four times
+      description: "Action to run when up paddle is pressed four times."
+      default: []
+      selector:
+        action:
+    button_3_quadruple:
+      name: Config button pressed four times
+      description: "Action to run when config button is pressed four times."
+      default: []
+      selector:
+        action:
+    ## Pressed Five Times
+    button_1_quintuple:
+      name: Down paddle pressed five times
+      description: "Action to run when down paddle is pressed five times."
+      default: []
+      selector:
+        action:
+    button_2_quintuple:
+      name: Up paddle pressed five times
+      description: "Action to run when up paddle is pressed five times."
+      default: []
+      selector:
+        action:
+    button_3_quintuple:
+      name: Config button pressed five times
+      description: "Action to run when config button is pressed five times."
+      default: []
+      selector:
+        action:
+mode: single
+max_exceeded: silent
+variables:
+  device_id: !input "inovelli_switch"
+trigger:
+  - platform: event
+    event_type: zwave_js_value_notification
+condition: "{{ trigger.event.data.device_id == device_id }}"
+action:
+  - variables:
+      button_id: '{{ trigger.event.data.property_key_name }}'
+      action_type: '{{ trigger.event.data.value }}'
+  - service: "logbook.log"
+    data:
+      name: 'zwave_js_value_notification'
+      message: 'received event: {{ button_id }} x {{ action_type }}'
+  - choose:
+      ### Button 1 (Down Paddle)
+      - conditions: "{{ button_id == '001' and action_type == 'KeyPressed' }}"
+        sequence: !input button_1
+      - conditions: "{{ button_id == '001' and action_type == 'KeyHeldDown' }}"
+        sequence: !input button_1_hold
+      - conditions: "{{ button_id == '001' and action_type == 'KeyReleased' }}"
+        sequence: !input button_1_release
+      - conditions: "{{ button_id == '001' and action_type == 'KeyPressed2x' }}"
+        sequence: !input button_1_double
+      - conditions: "{{ button_id == '001' and action_type == 'KeyPressed3x' }}"
+        sequence: !input button_1_triple
+      - conditions: "{{ button_id == '001' and action_type == 'KeyPressed4x' }}"
+        sequence: !input button_1_quadruple
+      - conditions: "{{ button_id == '001' and action_type == 'KeyPressed5x' }}"
+        sequence: !input button_1_quintuple
+      ### Button 2 (Upper Paddle)
+      - conditions: "{{ button_id == '002' and action_type == 'KeyPressed' }}"
+        sequence: !input button_2
+      - conditions: "{{ button_id == '002' and action_type == 'KeyHeldDown' }}"
+        sequence: !input button_2_hold
+      - conditions: "{{ button_id == '002' and action_type == 'KeyReleased' }}"
+        sequence: !input button_2_release
+      - conditions: "{{ button_id == '002' and action_type == 'KeyPressed2x' }}"
+        sequence: !input button_2_double
+      - conditions: "{{ button_id == '002' and action_type == 'KeyPressed3x' }}"
+        sequence: !input button_2_triple
+      - conditions: "{{ button_id == '002' and action_type == 'KeyPressed4x' }}"
+        sequence: !input button_2_quadruple
+      - conditions: "{{ button_id == '002' and action_type == 'KeyPressed5x' }}"
+        sequence: !input button_2_quintuple
+      ### Button 3 (Config Button)
+      - conditions: "{{ button_id == '003' and action_type == 'KeyPressed' }}"
+        sequence: !input button_3
+      - conditions: "{{ button_id == '003' and action_type == 'KeyHeldDown' }}"
+        sequence: !input button_3_hold
+      - conditions: "{{ button_id == '003' and action_type == 'KeyReleased' }}"
+        sequence: !input button_3_release
+      - conditions: "{{ button_id == '003' and action_type == 'KeyPressed2x' }}"
+        sequence: !input button_3_double
+      - conditions: "{{ button_id == '003' and action_type == 'KeyPressed3x' }}"
+        sequence: !input button_3_triple
+      - conditions: "{{ button_id == '003' and action_type == 'KeyPressed4x' }}"
+        sequence: !input button_3_quadruple
+      - conditions: "{{ button_id == '003' and action_type == 'KeyPressed5x' }}"
+        sequence: !input button_3_quintuple
