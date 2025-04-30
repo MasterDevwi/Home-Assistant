@@ -1,0 +1,159 @@
+# Based on the great work ChillyMannaRug did on the Home Assistant Community, which enriquegh updated to support the 0x01000035 firmware. Since ChillyMannaRug didn't update the blueprint, I've uploaded it here so it can be imported into Home Assistant
+# Source: https://community.home-assistant.io/t/zha-ikea-e2123-symfonisk-gen2-remote-customisable/584626/2
+
+blueprint:
+  name: ZHA - IKEA E2123 Symfonisk GEN2 remote
+  description:
+    Set up custom commands for each button on the Ikea Symfonisk Gen 2
+    Remote. The 2 shortcut buttons also have seperate functions for double press and
+    hold.
+  domain: automation
+  input:
+    remote:
+      name: Remote
+      description: IKEA Symfonisk controller GEN2 to use
+      selector:
+        device:
+          integration: zha
+          manufacturer: IKEA of Sweden
+          model: SYMFONISK sound remote gen2
+          multiple: false
+    action_play:
+      name: Play button press
+      description: Action to run on play button press.
+      default: []
+      selector:
+        action: {}
+    action_vol_up:
+      name: Volume Up button press
+      description: Action to run on volume up button press.
+      default: []
+      selector:
+        action: {}
+    action_vol_down:
+      name: Volume Down button press
+      description: Action to run on volume down button press.
+      default: []
+      selector:
+        action: {}
+    action_next:
+      name: Next button press
+      description: Action to run on next button press.
+      default: []
+      selector:
+        action: {}
+    action_previous:
+      name: Previous button press
+      description: Action to run on previous button press.
+      default: []
+      selector:
+        action: {}
+    action_1,1:
+      name: Shortcut 1 button press
+      description: Action to run on shortcut 1 button single press.
+      default: []
+      selector:
+        action: {}
+    action_1,2:
+      name: Shortcut 1 button double press
+      description: Action to run on shortcut 1 button double press.
+      default: []
+      selector:
+        action: {}
+    action_1,3:
+      name: Shortcut 1 button hold
+      description: Action to run on shortcut 1 button hold.
+      default: []
+      selector:
+        action: {}
+    action_2,1:
+      name: Shortcut 2 button press
+      description: Action to run on shortcut 2 button single press.
+      default: []
+      selector:
+        action: {}
+    action_2,2:
+      name: Shortcut 2 button double press
+      description: Action to run on shortcut 2 button double press.
+      default: []
+      selector:
+        action: {}
+    action_2,3:
+      name: Shortcut 2 button hold
+      description: Action to run on shortcut 2 button hold.
+      default: []
+      selector:
+        action: {}
+  source_url: https://community.home-assistant.io/t/zha-ikea-e2123-symfonisk-gen2-remote-customisable/584626
+mode: single
+max_exceeded: silent
+trigger:
+  - platform: event
+    event_type: zha_event
+    event_data:
+      device_id: !input remote
+action:
+  - variables:
+      command: "{{ trigger.event.data.command }}"
+      cluster_id: "{{ trigger.event.data.cluster_id }}"
+      endpoint_id: "{{ trigger.event.data.endpoint_id }}"
+      args: "{{ trigger.event.data.args }}"
+      action_play: !input action_play
+      action_vol_up: !input action_vol_up
+      action_vol_down: !input action_vol_down
+      action_next: !input action_next
+      action_previous: !input action_previous
+      action_1,1: !input action_1,1
+      action_1,2: !input action_1,2
+      action_1,3: !input action_1,3
+      action_2,1: !input action_2,1
+      action_2,2: !input action_2,2
+      action_2,3: !input action_2,3
+  - choose:
+      - conditions:
+          - "{{ command == 'toggle' }}"
+          - "{{ cluster_id == 6 }}"
+          - "{{ endpoint_id == 1 }}"
+        sequence: !input action_play
+      - conditions:
+          - "{{ command == 'step' }}"
+          - "{{ cluster_id == 8 }}"
+          - "{{ endpoint_id == 1 }}"
+          - "{{ trigger.event.data.params.step_mode == 0 }}"
+        sequence: !input action_next
+      - conditions:
+          - "{{ command == 'step' }}"
+          - "{{ cluster_id == 8 }}"
+          - "{{ endpoint_id == 1 }}"
+          - "{{ trigger.event.data.params.step_mode == 1 }}"
+        sequence: !input action_previous
+      - conditions:
+          - "{{ command == 'move_with_on_off' }}"
+          - "{{ cluster_id == 8 }}"
+          - "{{ endpoint_id == 1 }}"
+          - "{{ trigger.event.data.params.move_mode == 0}}"
+        sequence: !input action_vol_up
+      - conditions:
+          - "{{ command == 'short_release' }}"
+          - "{{ endpoint_id == 2 }}"
+        sequence: !input action_1,1
+      - conditions:
+          - "{{ command == 'multi_press_complete' }}"
+          - "{{ endpoint_id == 2 }}"
+        sequence: !input action_1,2
+      - conditions:
+          - "{{ command == 'long_release' }}"
+          - "{{ endpoint_id == 2 }}"
+        sequence: !input action_1,3
+      - conditions:
+          - "{{ command == 'short_release' }}"
+          - "{{ endpoint_id == 3 }}"
+        sequence: !input action_2,1
+      - conditions:
+          - "{{ command == 'multi_press_complete' }}"
+          - "{{ endpoint_id == 3 }}"
+        sequence: !input action_2,2
+      - conditions:
+          - "{{ command == 'long_release' }}"
+          - "{{ endpoint_id == 3 }}"
+        sequence: !input action_2,3
