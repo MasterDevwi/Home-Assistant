@@ -134,6 +134,12 @@ action:
           - "{{ trigger.event.data.params.move_mode == 0}}"
         sequence: !input action_vol_up
       - conditions:
+          - "{{ command == 'move_with_on_off' }}"
+          - "{{ cluster_id == 8 }}"
+          - "{{ endpoint_id == 1 }}"
+          - "{{ trigger.event.data.params.move_mode == 1}}"
+        sequence: !input action_vol_down
+      - conditions:
           - "{{ command == 'short_release' }}"
           - "{{ endpoint_id == 2 }}"
         sequence: !input action_1,1
