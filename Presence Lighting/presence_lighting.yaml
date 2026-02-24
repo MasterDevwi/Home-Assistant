@@ -1,0 +1,282 @@
+blueprint:
+  name: Presence Lighting
+  description: >
+    Turns lights on and off based on room presence. Supports customizable
+    turn-on/off actions, alternate delays (for guests or nighttime), sleeping
+    child suppression, upstairs lighting timer checks, and arbitrary custom
+    conditions via templates.
+
+    After creating an automation from this blueprint, you can add extra triggers
+    manually in the HA automation editor. Use trigger ID "sensor_detected" for
+    turn-on triggers and "sensor_cleared" for turn-off triggers. The blueprint's
+    choose logic already handles these IDs.
+  domain: automation
+  input:
+    # ========== Required ==========
+    room_presence_entity:
+      name: Room presence entity
+      description: >
+        The input_select entity that tracks room presence
+        (e.g., input_select.presence_garage).
+      selector:
+        entity:
+          domain: input_select
+
+    light_entity_to_check:
+      name: Primary light entity to check
+      description: >
+        The main light entity for this room. The turn-on branch checks this is
+        "off" before turning on, and the turn-off branch checks it is "on" before
+        turning off. Leave empty to skip the state check (useful for rooms with
+        complex multi-light logic handled in custom actions/conditions).
+      default: ""
+      selector:
+        entity:
+          domain: light
+
+    delay_before_off:
+      name: Delay before off (minutes)
+      description: >
+        Minutes to wait after the room becomes unoccupied before turning off
+        the lights.
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 60
+          unit_of_measurement: minutes
+          mode: box
+
+    turn_on_actions:
+      name: Turn-on actions
+      description: >
+        Actions to execute when turning the light on. Can be as simple as
+        calling a script (e.g., script.lighting_garage_on) or as complex as
+        a multi-step sequence with choose/if blocks for theater mode, brightness
+        levels, etc. The variable "is_upstairs_timer_active" is available here.
+      selector:
+        action: {}
+
+    turn_off_actions:
+      name: Turn-off actions
+      description: >
+        Actions to execute when turning the light off (after the delay). Can
+        include script calls, fan turn-offs, inline light.turn_off, etc.
+      selector:
+        action: {}
+
+    # ========== Optional: Alternate Delay ==========
+    alternate_delay:
+      name: Alternate delay (minutes)
+      description: >
+        A second delay value used when the alternate delay condition is true.
+        Set to 0 for instant off. Only takes effect when the condition below
+        evaluates to true. Ignored if the condition stays at its default.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 60
+          unit_of_measurement: minutes
+          mode: box
+
+    alternate_delay_condition:
+      name: Alternate delay condition (template)
+      description: >
+        A Jinja2 template that evaluates to true/false. When true, the alternate
+        delay is used instead of the normal delay. Leave as default to disable.
+        Examples:
+        {{ is_state('input_boolean.guest_mode', 'on') }}
+        {{ is_state('input_boolean.sleep_mode', 'on') or now().hour >= 23 or now().hour < 6 }}
+      default: "{{ false }}"
+      selector:
+        text:
+          multiline: true
+
+    # ========== Optional: Boolean Flags ==========
+    check_suppress_sleeping_child:
+      name: Check suppress lights for sleeping child
+      description: >
+        When enabled, the turn-on branch will only fire if
+        input_boolean.suppress_lights_for_sleeping_child is off.
+      default: false
+      selector:
+        boolean: {}
+
+    check_upstairs_timer:
+      name: Check upstairs lighting timer
+      description: >
+        When enabled, the variable "is_upstairs_timer_active" is set based on
+        timer.briefly_minimize_upstairs_lighting. Reference this variable in
+        your turn-on actions to adjust brightness or skip turning on.
+      default: false
+      selector:
+        boolean: {}
+
+    check_room_not_sleeping:
+      name: Block turn-on when room is sleeping
+      description: >
+        When enabled, prevents lights from turning on if the room presence
+        is in a sleeping state (Going to Sleep, Sleeping, Waking Up). Disable
+        this for rooms like Kitchen that should turn on at low brightness
+        during sleep instead of blocking entirely.
+      default: true
+      selector:
+        boolean: {}
+
+    # ========== Optional: Custom Conditions ==========
+    additional_on_condition:
+      name: Additional turn-on condition (template)
+      description: >
+        A Jinja2 template added to the turn-on conditions. Must evaluate
+        to true for the light to turn on. Use for room-specific checks like
+        theater mode, dinner party mode, nearby room lights, etc.
+        Examples:
+        {{ is_state('input_boolean.theater_mode', 'off') }}
+        {{ is_state('input_boolean.dinner_party_mode', 'on') or is_state('light.kitchen_table_switch', 'on') }}
+      default: "true"
+      selector:
+        text:
+          multiline: true
+
+    additional_off_condition:
+      name: Additional turn-off condition (template)
+      description: >
+        A Jinja2 template added to the turn-off conditions. Must evaluate
+        to true for the light to turn off. Use for checks like dinner party
+        mode, area occupancy sensors, etc.
+        Example:
+        {{ is_state('input_boolean.dinner_party_mode', 'off') }}
+      default: "true"
+      selector:
+        text:
+          multiline: true
+
+mode: restart
+max_exceeded: silent
+
+triggers:
+  - trigger: state
+    entity_id: !input room_presence_entity
+    id: room_presence_changes
+    alias: Room presence changes
+
+conditions:
+  - condition: state
+    entity_id: input_boolean.presence_enable_automations
+    state: "on"
+  - condition: state
+    entity_id: input_boolean.enable_lighting_automations
+    state: "on"
+  - condition: state
+    entity_id: input_boolean.vacation_mode
+    state: "off"
+
+actions:
+  - variables:
+      room_presence_entity_id: !input room_presence_entity
+      delay_before_off_val: !input delay_before_off
+      alternate_delay_val: !input alternate_delay
+      alternate_delay_cond: !input alternate_delay_condition
+      light_check: !input light_entity_to_check
+      suppress_sleeping: !input check_suppress_sleeping_child
+      upstairs_timer: !input check_upstairs_timer
+      check_not_sleeping: !input check_room_not_sleeping
+      unoccupied_states:
+        - Unknown
+        - Extended Away
+        - Empty
+      sleeping_states:
+        - Going to Sleep
+        - Sleeping
+        - Waking Up
+      room_presence_state: "{{ states(room_presence_entity_id) }}"
+      triggered_by_a_room: >-
+        {{ trigger.entity_id.startswith('input_select.presence_') }}
+      triggered_by_current_room: >-
+        {{ trigger.entity_id == room_presence_entity_id }}
+      is_room_state_trigger_empty_to_occupied: >-
+        {% if triggered_by_a_room %}
+          {% set current_state = trigger.to_state.state %}
+          {% set previous_state = trigger.from_state.state %}
+          {% if current_state not in unoccupied_states and previous_state in unoccupied_states %}
+            true
+          {% else %}
+            false
+          {% endif %}
+        {% else %}
+          true
+        {% endif %}
+      is_upstairs_timer_active: >-
+        {% if upstairs_timer %}
+          {{ is_state('timer.briefly_minimize_upstairs_lighting', 'active') }}
+        {% else %}
+          false
+        {% endif %}
+    alias: Define room presence variables
+
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+          - room_presence_changes
+          - sensor_detected
+      - condition: template
+        value_template: "{{ is_room_state_trigger_empty_to_occupied }}"
+        alias: Room transitioned from empty to occupied
+      - condition: template
+        value_template: >-
+          {% if check_not_sleeping %}
+            {{ room_presence_state not in sleeping_states }}
+          {% else %}
+            true
+          {% endif %}
+        alias: Room is not in a sleeping state (if enabled)
+      - condition: template
+        value_template: >-
+          {{ not light_check or is_state(light_check, 'off') }}
+        alias: Primary light is off (or check skipped)
+      - condition: template
+        value_template: >-
+          {% if suppress_sleeping %}
+            {{ is_state('input_boolean.suppress_lights_for_sleeping_child', 'off') }}
+          {% else %}
+            true
+          {% endif %}
+        alias: Suppress lights for sleeping child (if enabled)
+      - condition: template
+        value_template: !input additional_on_condition
+        alias: Additional turn-on condition
+      sequence: !input turn_on_actions
+      alias: Turn the light on
+
+    - conditions:
+      - condition: trigger
+        id:
+          - room_presence_changes
+          - sensor_cleared
+      - condition: template
+        value_template: "{{ room_presence_state in unoccupied_states }}"
+        alias: Room is unoccupied
+      - condition: template
+        value_template: >-
+          {{ not light_check or is_state(light_check, 'on') }}
+        alias: Primary light is on (or check skipped)
+      - condition: template
+        value_template: !input additional_off_condition
+        alias: Additional turn-off condition
+      sequence:
+      - delay:
+          hours: 0
+          minutes: >-
+            {% if alternate_delay_cond %}
+              {{ alternate_delay_val }}
+            {% else %}
+              {{ delay_before_off_val }}
+            {% endif %}
+          seconds: 0
+        alias: Delay before turning off
+      - choose: []
+        default: !input turn_off_actions
+      alias: Turn the light off after a delay
+    alias: Turn on or off the lights
