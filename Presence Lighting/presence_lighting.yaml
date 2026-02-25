@@ -48,6 +48,15 @@ blueprint:
         entity:
           domain: light
 
+    disable_for_babysitter:
+      name: Disable for babysitter
+      description: >
+        Disables this automation when a babysitter is over,
+        preventing the light from turning on or off.
+      default: false
+      selector:
+        boolean: {}
+
     # ========== Turn-On ==========
     additional_detect_entities:
       name: Additional turn-on entities
@@ -236,6 +245,7 @@ actions:
       suppress_upstairs: !input suppress_when_upstairs_minimized
       rp_mode: !input room_presence_trigger_mode
       require_unoccupied_for_sensors: !input require_room_unoccupied_for_sensors
+      disable_babysitter: !input disable_for_babysitter
       alternate_delay_conds: !input alternate_delay_condition
       unoccupied_states:
         - Unknown
@@ -299,6 +309,14 @@ actions:
         alias: Lighting isn't suppressed for a sleeping child (if enabled)
       - condition: template
         value_template: >-
+          {% if disable_babysitter %}
+            {{ is_state('input_boolean.suppress_automations_for_babysitter', 'off') }}
+          {% else %}
+            true
+          {% endif %}
+        alias: Not disabled for babysitter (if enabled)
+      - condition: template
+        value_template: >-
           {% if suppress_upstairs == 'timer' %}
             {{ not is_state('timer.briefly_minimize_upstairs_lighting', 'active') }}
           {% elif suppress_upstairs == 'mode' %}
@@ -333,6 +351,14 @@ actions:
         value_template: >-
           {{ not light_check or is_state(light_check, 'on') }}
         alias: Primary light is on (or check skipped)
+      - condition: template
+        value_template: >-
+          {% if disable_babysitter %}
+            {{ is_state('input_boolean.suppress_automations_for_babysitter', 'off') }}
+          {% else %}
+            true
+          {% endif %}
+        alias: Not disabled for babysitter (if enabled)
       - alias: Additional turn-off conditions
         condition: and
         conditions: !input additional_off_condition
