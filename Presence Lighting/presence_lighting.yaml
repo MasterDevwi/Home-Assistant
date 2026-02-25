@@ -46,18 +46,41 @@ blueprint:
       selector:
         action: {}
 
-    additional_sensor:
-      name: Additional sensor (optional)
+    additional_detect_entities:
+      name: Additional detect entities
       description: >
-        An optional binary sensor that also controls the lights. When this
-        sensor turns on, the turn-on branch runs. When it turns off, the
-        turn-off branch runs. Useful for rooms with motion sensors or door
-        contacts alongside room presence. The default (sun.sun) is a
-        placeholder that never fires — replace it with a binary_sensor
-        entity for rooms that need one.
-      default: sun.sun
+        Entities that trigger the turn-on branch when they transition from
+        off to on. For rooms with motion sensors, door contacts, or area
+        presence binary sensors. Select multiple entities if needed.
+
+        If an entity should trigger both turn-on AND turn-off, add it to
+        both this list and the "Additional clear entities" list below.
+
+        The default (sun.sun) is a placeholder that never fires off→on.
+        Replace it with binary_sensor entities for rooms that need them.
+      default:
+        - sun.sun
       selector:
-        entity: {}
+        entity:
+          multiple: true
+
+    additional_clear_entities:
+      name: Additional clear entities
+      description: >
+        Entities that trigger the turn-off branch when they transition from
+        on to off. For rooms with area presence sensors, occupancy sensors,
+        or override toggles that should initiate a turn-off check.
+
+        If an entity should trigger both turn-on AND turn-off, add it to
+        both this list and the "Additional detect entities" list above.
+
+        The default (sun.sun) is a placeholder that never fires on→off.
+        Replace it with binary_sensor or input_boolean entities as needed.
+      default:
+        - sun.sun
+      selector:
+        entity:
+          multiple: true
 
     additional_on_condition:
       name: Additional turn-on conditions
@@ -188,17 +211,17 @@ triggers:
     id: room_presence_changes
     alias: Room presence changes
   - trigger: state
-    entity_id: !input additional_sensor
+    entity_id: !input additional_detect_entities
     from: "off"
     to: "on"
     id: sensor_detected
-    alias: Additional sensor detected
+    alias: Additional detect entity activated
   - trigger: state
-    entity_id: !input additional_sensor
+    entity_id: !input additional_clear_entities
     from: "on"
     to: "off"
     id: sensor_cleared
-    alias: Additional sensor cleared
+    alias: Additional clear entity deactivated
 
 conditions:
   - condition: state
