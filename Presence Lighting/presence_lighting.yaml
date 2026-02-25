@@ -43,7 +43,6 @@ blueprint:
       default: both
       selector:
         select:
-          mode: dropdown
           options:
             - label: Both
               value: both
@@ -73,7 +72,7 @@ blueprint:
         Actions to execute when turning the light on. Can be as simple as
         calling a script (e.g., script.lighting_garage_on) or as complex as
         a multi-step sequence with choose/if blocks for theater mode, brightness
-        levels, etc. The variable "is_upstairs_timer_active" is available here.
+        levels, etc.
       selector:
         action: {}
 
@@ -106,7 +105,6 @@ blueprint:
         - Global toggles are on (presence, lighting, vacation mode off)
         - Room transitioned from empty/away to occupied
         - Room is not in a sleeping state
-        - House is not in sleep mode (if "Block turn-on when the house is sleeping" is enabled)
         - Primary light is currently off (if a light entity is set)
         - Sleeping child suppression is not active (if that flag is enabled)
 
@@ -132,22 +130,6 @@ blueprint:
       selector:
         boolean: {}
 
-    check_room_not_sleeping:
-      name: Block turn-on when the house is sleeping
-      description: >
-        When enabled, prevents lights from turning on if
-        input_boolean.sleep_mode is on. Disable this for rooms like Kitchen
-        that should turn on at low brightness during sleep instead of
-        blocking entirely.
-
-        Note: Even with this disabled, lights never turn on for a room
-        whose presence state is sleeping (Going to Sleep, Sleeping, Waking
-        Up) because the blueprint requires a transition from an unoccupied
-        state to trigger the turn-on branch.
-      default: false
-      selector:
-        boolean: {}
-
     check_suppress_sleeping_child:
       name: Check suppress lights for sleeping child
       description: >
@@ -157,12 +139,13 @@ blueprint:
       selector:
         boolean: {}
 
-    check_upstairs_timer:
-      name: Check upstairs lighting timer
+    suppress_when_upstairs_minimized:
+      name: Suppress turn-on when upstairs lighting is minimized
       description: >
-        When enabled, the variable "is_upstairs_timer_active" is set based on
-        timer.briefly_minimize_upstairs_lighting. Reference this variable in
-        your turn-on actions to adjust brightness or skip turning on.
+        When enabled, the turn-on branch will only fire if
+        timer.briefly_minimize_upstairs_lighting is not active. Use this
+        for upstairs rooms where lights should stay dim or off while the
+        minimize timer is running.
       default: false
       selector:
         boolean: {}
@@ -289,8 +272,7 @@ actions:
       alternate_delay_val: !input alternate_delay
       light_check: !input light_entity_to_check
       suppress_sleeping: !input check_suppress_sleeping_child
-      upstairs_timer: !input check_upstairs_timer
-      check_not_sleeping: !input check_room_not_sleeping
+      suppress_upstairs: !input suppress_when_upstairs_minimized
       rp_mode: !input room_presence_trigger_mode
       require_unoccupied_for_sensors: !input require_room_unoccupied_for_sensors
       unoccupied_states:
@@ -322,12 +304,6 @@ actions:
             true
           {% endif %}
         {% endif %}
-      is_upstairs_timer_active: >-
-        {% if upstairs_timer %}
-          {{ is_state('timer.briefly_minimize_upstairs_lighting', 'active') }}
-        {% else %}
-          false
-        {% endif %}
     alias: Define room presence variables
 
   - choose:
@@ -351,14 +327,6 @@ actions:
         alias: Room is not in a sleeping state
       - condition: template
         value_template: >-
-          {% if check_not_sleeping %}
-            {{ is_state('input_boolean.sleep_mode', 'off') }}
-          {% else %}
-            true
-          {% endif %}
-        alias: House is not in sleep mode (if enabled)
-      - condition: template
-        value_template: >-
           {{ not light_check or is_state(light_check, 'off') }}
         alias: Primary light is off (or check skipped)
       - condition: template
@@ -369,6 +337,14 @@ actions:
             true
           {% endif %}
         alias: Suppress lights for sleeping child (if enabled)
+      - condition: template
+        value_template: >-
+          {% if suppress_upstairs %}
+            {{ not is_state('timer.briefly_minimize_upstairs_lighting', 'active') }}
+          {% else %}
+            true
+          {% endif %}
+        alias: Suppress turn-on when upstairs lighting is minimized (if enabled)
       - alias: Additional turn-on conditions
         condition: and
         conditions: !input additional_on_condition
