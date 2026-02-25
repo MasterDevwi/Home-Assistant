@@ -39,6 +39,7 @@ Only needed if you enable their corresponding flags in the blueprint UI:
 | Helper | Used when |
 |---|---|
 | `input_boolean.suppress_lights_for_sleeping_child` | `Confirm lighting isn't suppressed for a sleeping child` is not Off |
+| `input_boolean.suppress_automations_for_babysitter` | `Disable for babysitter` is enabled |
 | `timer.briefly_minimize_upstairs_lighting` | `Confirm upstairs lighting isn't minimized` is set to Check timer or Check both |
 | `input_boolean.minimize_upstairs_lighting` | `Confirm upstairs lighting isn't minimized` is set to Check mode or Check both |
 
@@ -93,6 +94,12 @@ A `light.*` entity. When set:
 - **Turn-off** only fires if this light is currently **on**
 
 Leave empty to skip the state check. This is useful for rooms with multiple independent lights where the on/off logic is handled in custom actions or conditions.
+
+#### Disable for babysitter *(default: false)*
+
+When enabled, both the turn-on and turn-off branches are blocked if `input_boolean.suppress_automations_for_babysitter` is `on`. Use this for rooms where you want to completely disable automatic lighting when a babysitter is over.
+
+This is a **global condition** — it prevents both turn-on and turn-off actions from executing, leaving lights in whatever state the babysitter set them to manually.
 
 ---
 
@@ -230,8 +237,9 @@ The turn-on branch fires when **all** of these conditions pass (evaluated in ord
 3. **Not sleeping:** The room presence entity must NOT be in a sleeping state (`Going to Sleep`, `Sleeping`, `Waking Up`). This is always enforced and cannot be disabled — sleeping rooms never get lights turned on.
 4. **Light is off:** If a primary light entity is configured, it must be in the `off` state. If no light entity is set, this check is skipped.
 5. **Sleeping child:** If `Confirm lighting isn't suppressed for a sleeping child` is enabled, `input_boolean.suppress_lights_for_sleeping_child` must be `off`.
-6. **Upstairs minimized:** If `Confirm upstairs lighting isn't minimized` is not Off, the corresponding helper(s) are checked — Check timer checks the timer, Check mode checks the input_boolean, Check both checks either.
-7. **Additional conditions:** All conditions from the `Turn-on conditions` input must pass (AND logic).
+6. **Babysitter:** If `Disable for babysitter` is enabled, `input_boolean.suppress_automations_for_babysitter` must be `off`.
+7. **Upstairs minimized:** If `Confirm upstairs lighting isn't minimized` is not Off, the corresponding helper(s) are checked — Check timer checks the timer, Check mode checks the input_boolean, Check both checks either.
+8. **Additional conditions:** All conditions from the `Turn-on conditions` input must pass (AND logic).
 
 If all conditions pass, the **turn-on actions** execute.
 
@@ -244,12 +252,13 @@ The turn-off branch fires when **all** of these conditions pass:
 1. **Trigger routing:** The trigger must be either `sensor_cleared`, or `room_presence_changes` with the trigger mode set to `Occupancy and vacancy` or `Vacancy only`.
 2. **Room is unoccupied:** The room presence entity must be in an unoccupied state (`Unknown`, `Extended Away`, `Empty`).
 3. **Light is on:** If a primary light entity is configured, it must be in the `on` state. If no light entity is set, this check is skipped.
-4. **Additional conditions:** All conditions from the `Turn-off conditions` input must pass (AND logic).
+4. **Babysitter:** If `Disable for babysitter` is enabled, `input_boolean.suppress_automations_for_babysitter` must be `off`.
+5. **Additional conditions:** All conditions from the `Turn-off conditions` input must pass (AND logic).
 
 If all conditions pass, the automation proceeds to the delay:
 
-5. **Delay selection:** If the alternate delay condition list has at least one enabled condition and all enabled conditions pass (AND logic), the alternate delay is used. Otherwise, the normal delay is used.
-6. **Wait:** The automation waits for the selected delay duration.
-7. **Turn-off actions:** After the delay, the turn-off actions execute.
+6. **Delay selection:** If the alternate delay condition list has at least one enabled condition and all enabled conditions pass (AND logic), the alternate delay is used. Otherwise, the normal delay is used.
+7. **Wait:** The automation waits for the selected delay duration.
+8. **Turn-off actions:** After the delay, the turn-off actions execute.
 
-> **Restart cancellation:** Because the automation uses `mode: restart`, if any trigger fires during the delay (step 6), the entire automation restarts from the beginning. If the new trigger routes to the turn-on branch, the lights stay on. If it routes to the turn-off branch again, the delay restarts from zero.
+> **Restart cancellation:** Because the automation uses `mode: restart`, if any trigger fires during the delay (step 7), the entire automation restarts from the beginning. If the new trigger routes to the turn-on branch, the lights stay on. If it routes to the turn-off branch again, the delay restarts from zero.
