@@ -82,8 +82,8 @@ blueprint:
       name: Confirm room is unoccupied
       description: >
         Before turning on the light, ensure the room is
-        unoccupied (prevents room state changes from turning
-        the light back on when users want it off).
+        unoccupied (prevents additional conditions from 
+        turning the light back on when users want it off).
       default: true
       selector:
         boolean: {}
