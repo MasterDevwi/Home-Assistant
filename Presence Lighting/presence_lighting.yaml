@@ -11,12 +11,6 @@ blueprint:
     branch requires a transition from an unoccupied state (Empty, Extended
     Away, Unknown) to an occupied state. Sleeping states are not unoccupied,
     so they cannot produce that transition.
-
-    To add extra triggers (e.g., a motion sensor or door contact), open the
-    automation in the HA editor after creating it and add triggers manually.
-    Use trigger ID "sensor_detected" for turn-on triggers and
-    "sensor_cleared" for turn-off triggers. The blueprint's choose logic
-    already handles both IDs.
   domain: automation
   input:
     # ========== Room Setup ==========
@@ -51,6 +45,20 @@ blueprint:
         levels, etc. The variable "is_upstairs_timer_active" is available here.
       selector:
         action: {}
+
+    additional_on_triggers:
+      name: Additional scenarios where lights should turn on
+      description: >
+        Optional extra triggers that also cause lights to turn on (e.g., a
+        motion sensor turning on, or a door contact opening). These are
+        given trigger ID "sensor_detected" so the blueprint routes them to
+        the turn-on branch. The default placeholder trigger never fires —
+        replace it with your own triggers when needed.
+      default:
+        - trigger: event
+          event_type: presence_lighting_placeholder
+      selector:
+        trigger: {}
 
     additional_on_condition:
       name: Additional turn-on conditions
@@ -116,6 +124,20 @@ blueprint:
       selector:
         action: {}
 
+    additional_off_triggers:
+      name: Additional scenarios where lights should turn off
+      description: >
+        Optional extra triggers that also cause lights to turn off (e.g., a
+        motion sensor clearing). These are given trigger ID "sensor_cleared"
+        so the blueprint routes them to the turn-off branch. The default
+        placeholder trigger never fires — replace it with your own triggers
+        when needed.
+      default:
+        - trigger: event
+          event_type: presence_lighting_placeholder
+      selector:
+        trigger: {}
+
     additional_off_condition:
       name: Additional turn-off conditions
       description: >
@@ -180,6 +202,10 @@ triggers:
     entity_id: !input room_presence_entity
     id: room_presence_changes
     alias: Room presence changes
+  - triggers: !input additional_on_triggers
+    id: sensor_detected
+  - triggers: !input additional_off_triggers
+    id: sensor_cleared
 
 conditions:
   - condition: state
