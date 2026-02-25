@@ -104,6 +104,7 @@ blueprint:
         The blueprint already checks these before turn-on:
         - Global toggles are on (presence, lighting, vacation mode off)
         - Room transitioned from empty/away to occupied
+        - Room is not in a sleeping state
         - House is not in sleep mode (if "Block turn-on when the house is sleeping" is enabled)
         - Primary light is currently off (if a light entity is set)
         - Sleeping child suppression is not active (if that flag is enabled)
@@ -113,6 +114,22 @@ blueprint:
       default: []
       selector:
         condition: {}
+
+    require_room_unoccupied_for_sensors:
+      name: Require room unoccupied for sensor turn-on
+      description: >
+        When enabled (default), additional detect entities will only trigger
+        the turn-on branch if the room presence entity is in an unoccupied
+        state (Empty, Extended Away, or Unknown). This prevents sensors from
+        re-running turn-on actions and adjusting lights when someone is
+        already in the room.
+
+        Disable this for rooms where the sensor should turn on lights
+        regardless of room presence state (e.g., a door contact that should
+        always trigger lights when opened).
+      default: true
+      selector:
+        boolean: {}
 
     check_room_not_sleeping:
       name: Block turn-on when the house is sleeping
@@ -274,6 +291,7 @@ actions:
       upstairs_timer: !input check_upstairs_timer
       check_not_sleeping: !input check_room_not_sleeping
       rp_mode: !input room_presence_trigger_mode
+      require_unoccupied_for_sensors: !input require_room_unoccupied_for_sensors
       unoccupied_states:
         - Unknown
         - Extended Away
@@ -297,7 +315,11 @@ actions:
             false
           {% endif %}
         {% else %}
-          true
+          {% if require_unoccupied_for_sensors %}
+            {{ states(room_presence_entity_id) in unoccupied_states }}
+          {% else %}
+            true
+          {% endif %}
         {% endif %}
       is_upstairs_timer_active: >-
         {% if upstairs_timer %}
