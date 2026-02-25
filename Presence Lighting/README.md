@@ -38,8 +38,9 @@ Only needed if you enable their corresponding flags in the blueprint UI:
 
 | Helper | Used when |
 |---|---|
-| `input_boolean.suppress_lights_for_sleeping_child` | `Confirm lighting isn't suppressed for a sleeping child` is enabled |
-| `timer.briefly_minimize_upstairs_lighting` | `Confirm upstairs lighting isn't minimized` is enabled |
+| `input_boolean.suppress_lights_for_sleeping_child` | `Confirm lighting isn't suppressed for a sleeping child` is not Off |
+| `timer.briefly_minimize_upstairs_lighting` | `Confirm upstairs lighting isn't minimized` is set to Mode or Both |
+| `input_boolean.minimize_upstairs_lighting` | `Confirm upstairs lighting isn't minimized` is set to Toggle or Both |
 
 ## Installation
 
@@ -120,9 +121,16 @@ Controls what happens when an additional turn-on entity fires while the room is 
 
 > **Note:** This setting only applies to additional turn-on entities, not to the room presence entity itself. Room presence always requires a transition from unoccupied → occupied.
 
-#### Confirm upstairs lighting isn't minimized *(default: false)*
+#### Confirm upstairs lighting isn't minimized *(default: Off)*
 
-When enabled, the turn-on branch is blocked if `timer.briefly_minimize_upstairs_lighting` is currently `active`. Use this for upstairs rooms where lights should stay dim or off while the minimize timer is running.
+A 4-option select that controls whether the turn-on branch checks upstairs lighting minimize state:
+
+| Option | Behavior |
+|---|---|
+| **Off** (default) | No check — turn-on is not blocked by upstairs minimize state |
+| **Mode** | Blocked if `timer.briefly_minimize_upstairs_lighting` is `active` |
+| **Toggle** | Blocked if `input_boolean.minimize_upstairs_lighting` is `on` |
+| **Both** | Blocked if either the timer is active or the input_boolean is on |
 
 This is a **blocking condition** — it completely prevents the turn-on actions from executing.
 
@@ -222,7 +230,7 @@ The turn-on branch fires when **all** of these conditions pass (evaluated in ord
 3. **Not sleeping:** The room presence entity must NOT be in a sleeping state (`Going to Sleep`, `Sleeping`, `Waking Up`). This is always enforced and cannot be disabled — sleeping rooms never get lights turned on.
 4. **Light is off:** If a primary light entity is configured, it must be in the `off` state. If no light entity is set, this check is skipped.
 5. **Sleeping child:** If `Confirm lighting isn't suppressed for a sleeping child` is enabled, `input_boolean.suppress_lights_for_sleeping_child` must be `off`.
-6. **Upstairs minimized:** If `Confirm upstairs lighting isn't minimized` is enabled, `timer.briefly_minimize_upstairs_lighting` must not be `active`.
+6. **Upstairs minimized:** If `Confirm upstairs lighting isn't minimized` is not Off, the corresponding helper(s) are checked — Mode checks the timer, Toggle checks the input_boolean, Both checks either.
 7. **Additional conditions:** All conditions from the `Additional turn-on conditions` input must pass (AND logic).
 
 If all conditions pass, the **turn-on actions** execute.
