@@ -98,11 +98,11 @@ blueprint:
           options:
             - label: "Off"
               value: "off"
-            - label: Mode
+            - label: Check mode
               value: mode
-            - label: Timer
+            - label: Check timer
               value: timer
-            - label: Both
+            - label: Check both
               value: both
 
     check_suppress_sleeping_child:
