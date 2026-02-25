@@ -106,7 +106,7 @@ A multi-select entity picker. These entities trigger the **turn-on** branch when
 
 **Shared entities:** If a single entity should trigger both turn-on AND turn-off (e.g. a motion sensor), add it to both this list and the "Additional turn-off entities" list.
 
-#### Additional turn-on conditions *(default: empty)*
+#### Turn-on conditions *(default: empty)*
 
 A condition editor input. All conditions listed here are evaluated with AND logic — every condition must pass for the turn-on branch to proceed.
 
@@ -152,7 +152,7 @@ A multi-select entity picker. These entities trigger the **turn-off** branch whe
 
 The `sun.sun` default is a no-op placeholder (same mechanism as additional turn-on entities — `sun.sun` never transitions `on` → `off`).
 
-#### Additional turn-off conditions *(default: empty)*
+#### Turn-off conditions *(default: empty)*
 
 A condition editor input. All conditions listed here are evaluated with AND logic. These are checked **after** the built-in checks (see [Turn-Off Logic Flow](#turn-off-logic-flow) below).
 
@@ -231,7 +231,7 @@ The turn-on branch fires when **all** of these conditions pass (evaluated in ord
 4. **Light is off:** If a primary light entity is configured, it must be in the `off` state. If no light entity is set, this check is skipped.
 5. **Sleeping child:** If `Confirm lighting isn't suppressed for a sleeping child` is enabled, `input_boolean.suppress_lights_for_sleeping_child` must be `off`.
 6. **Upstairs minimized:** If `Confirm upstairs lighting isn't minimized` is not Off, the corresponding helper(s) are checked — Check timer checks the timer, Check mode checks the input_boolean, Check both checks either.
-7. **Additional conditions:** All conditions from the `Additional turn-on conditions` input must pass (AND logic).
+7. **Additional conditions:** All conditions from the `Turn-on conditions` input must pass (AND logic).
 
 If all conditions pass, the **turn-on actions** execute.
 
@@ -244,7 +244,7 @@ The turn-off branch fires when **all** of these conditions pass:
 1. **Trigger routing:** The trigger must be either `sensor_cleared`, or `room_presence_changes` with the trigger mode set to `Occupancy and vacancy` or `Vacancy only`.
 2. **Room is unoccupied:** The room presence entity must be in an unoccupied state (`Unknown`, `Extended Away`, `Empty`).
 3. **Light is on:** If a primary light entity is configured, it must be in the `on` state. If no light entity is set, this check is skipped.
-4. **Additional conditions:** All conditions from the `Additional turn-off conditions` input must pass (AND logic).
+4. **Additional conditions:** All conditions from the `Turn-off conditions` input must pass (AND logic).
 
 If all conditions pass, the automation proceeds to the delay:
 
