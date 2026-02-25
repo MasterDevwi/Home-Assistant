@@ -211,8 +211,8 @@ blueprint:
     alternate_delay_condition:
       name: Alternate delay condition
       description: >
-        Conditions that, when met, cause the alternate delay to be used
-        instead of the normal delay. Use the HA condition editor to add
+        Conditions that, when ANY are met, cause the alternate delay to be
+        used instead of the normal delay. Use the HA condition editor to add
         state checks, template conditions, etc. Leave empty (default) to
         always use the normal delay.
         Examples: guest mode is on, sleep mode is on, time is after 11pm.
@@ -286,8 +286,6 @@ actions:
       room_presence_state: "{{ states(room_presence_entity_id) }}"
       triggered_by_a_room: >-
         {{ trigger.entity_id.startswith('input_select.presence_') }}
-      triggered_by_current_room: >-
-        {{ trigger.entity_id == room_presence_entity_id }}
       is_room_state_trigger_empty_to_occupied: >-
         {% if triggered_by_a_room %}
           {% set current_state = trigger.to_state.state %}
@@ -375,7 +373,9 @@ actions:
       sequence:
       - choose:
         - alias: Use alternate delay
-          conditions: !input alternate_delay_condition
+          conditions:
+            - condition: or
+              conditions: !input alternate_delay_condition
           sequence:
             - delay:
                 hours: 0
