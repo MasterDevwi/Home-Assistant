@@ -43,8 +43,8 @@ blueprint:
     additional_detect_entities:
       name: Additional turn-on entities
       description: >
-        Additional entities that should turn on the light when they 
-        transition from off to on. 
+        Additional entities that should turn on the light when they
+        transition from off to on.
 
         If no entities are selected, the default (sun.sun) is required
         to ensure the blueprint works.
@@ -104,8 +104,8 @@ blueprint:
     additional_clear_entities:
       name: Additional turn-off entities
       description: >
-        Additional entities that should turn off the light when they 
-        transition from on to off. 
+        Additional entities that should turn off the light when they
+        transition from on to off.
 
         If no entities are selected, the default (sun.sun) is required
         to ensure the blueprint works.
@@ -182,13 +182,13 @@ triggers:
     from: "off"
     to: "on"
     id: sensor_detected
-    alias: Additional detect entity activated
+    alias: Additional turn-on entity activated
   - trigger: state
     entity_id: !input additional_clear_entities
     from: "on"
     to: "off"
     id: sensor_cleared
-    alias: Additional clear entity deactivated
+    alias: Additional turn-off entity deactivated
 
 conditions:
   - condition: state
@@ -251,7 +251,7 @@ actions:
           {% else %}
             false
           {% endif %}
-        alias: Trigger is a detect entity or room presence (if mode allows)
+        alias: Trigger is a turn-on entity or room presence (if mode allows)
       - condition: template
         value_template: "{{ is_room_state_trigger_empty_to_occupied }}"
         alias: Room transitioned from empty to occupied
@@ -270,7 +270,7 @@ actions:
           {% else %}
             true
           {% endif %}
-        alias: Suppress lights for sleeping child (if enabled)
+        alias: Lighting isn't suppressed for a sleeping child (if enabled)
       - condition: template
         value_template: >-
           {% if suppress_upstairs %}
@@ -278,7 +278,7 @@ actions:
           {% else %}
             true
           {% endif %}
-        alias: Suppress turn-on when upstairs lighting is minimized (if enabled)
+        alias: Upstairs lighting isn't minimized (if enabled)
       - alias: Additional turn-on conditions
         condition: and
         conditions: !input additional_on_condition
@@ -295,7 +295,7 @@ actions:
           {% else %}
             false
           {% endif %}
-        alias: Trigger is a clear entity or room presence (if mode allows)
+        alias: Trigger is a turn-off entity or room presence (if mode allows)
       - condition: template
         value_template: "{{ room_presence_state in unoccupied_states }}"
         alias: Room is unoccupied
@@ -310,7 +310,7 @@ actions:
       - choose:
         - alias: Use alternate delay
           conditions:
-            - condition: or
+            - condition: and
               conditions: !input alternate_delay_condition
           sequence:
             - delay:
