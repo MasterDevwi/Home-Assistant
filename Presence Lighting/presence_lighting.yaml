@@ -64,9 +64,9 @@ blueprint:
           multiple: true
 
     additional_on_condition:
-      name: Additional turn-on conditions
+      name: Turn-on conditions
       description: >
-        Extra conditions that must be met for the light to turn on.
+        Conditions that must be met for the light to turn on.
 
         The blueprint has built-in checks to ensure that presence and 
         lighting automations are enabled, vacation mode is off, the 
@@ -138,9 +138,9 @@ blueprint:
           multiple: true
 
     additional_off_condition:
-      name: Additional turn-off conditions
+      name: Turn-off conditions
       description: >
-        Extra conditions that must be met for the light to turn off.
+        Conditions that must be met for the light to turn off.
 
         The blueprint has built-in checks to ensure that presence and 
         lighting automations are enabled, vacation mode is off, the 
