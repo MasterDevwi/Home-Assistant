@@ -51,17 +51,27 @@ blueprint:
         Extra conditions that must be met for the light to turn on. Use the
         HA condition editor to add state checks, template conditions, time
         ranges, etc. Leave empty (default) to skip.
+
+        The blueprint already checks these before turn-on:
+        - Global toggles are on (presence, lighting, vacation mode off)
+        - Room transitioned from empty/away to occupied
+        - House is not in sleep mode (if "Block turn-on when the house is sleeping" is enabled)
+        - Primary light is currently off (if a light entity is set)
+        - Sleeping child suppression is not active (if that flag is enabled)
+
+        Use this input for room-specific logic not covered above, such as
+        theater mode, dinner party mode, or checking nearby room lights.
       default: []
       selector:
         condition: {}
 
     check_room_not_sleeping:
-      name: Block turn-on when room is sleeping
+      name: Block turn-on when the house is sleeping
       description: >
-        When enabled, prevents lights from turning on if the room presence
-        is in a sleeping state (Going to Sleep, Sleeping, Waking Up). Disable
-        this for rooms like Kitchen that should turn on at low brightness
-        during sleep instead of blocking entirely.
+        When enabled, prevents lights from turning on if
+        input_boolean.sleep_mode is on. Disable this for rooms like Kitchen
+        that should turn on at low brightness during sleep instead of
+        blocking entirely.
       default: true
       selector:
         boolean: {}
@@ -100,6 +110,14 @@ blueprint:
         Extra conditions that must be met for the light to turn off. Use the
         HA condition editor to add state checks, template conditions, etc.
         Leave empty (default) to skip.
+
+        The blueprint already checks these before turn-off:
+        - Global toggles are on (presence, lighting, vacation mode off)
+        - Room is in an unoccupied state (Unknown, Extended Away, or Empty)
+        - Primary light is currently on (if a light entity is set)
+
+        Use this input for room-specific logic not covered above, such as
+        dinner party mode or area occupancy sensors.
       default: []
       selector:
         condition: {}
@@ -118,24 +136,22 @@ blueprint:
           mode: box
 
     alternate_delay_condition:
-      name: Alternate delay condition (template)
+      name: Alternate delay condition
       description: >
-        A Jinja2 template that evaluates to true/false. When true, the alternate
-        delay is used instead of the normal delay. Leave as default to disable.
-        Examples:
-        {{ is_state('input_boolean.guest_mode', 'on') }}
-        {{ is_state('input_boolean.sleep_mode', 'on') or now().hour >= 23 or now().hour < 6 }}
-      default: "{{ false }}"
+        Conditions that, when met, cause the alternate delay to be used
+        instead of the normal delay. Use the HA condition editor to add
+        state checks, template conditions, etc. Leave empty (default) to
+        always use the normal delay.
+        Examples: guest mode is on, sleep mode is on, time is after 11pm.
+      default: []
       selector:
-        text:
-          multiline: true
+        condition: {}
 
     alternate_delay:
       name: Alternate delay (minutes)
       description: >
-        A second delay value used when the alternate delay condition is true.
-        Set to 0 for instant off. Only takes effect when the condition above
-        evaluates to true.
+        A second delay value used when the alternate delay condition above
+        is met. Set to 0 for instant off.
       default: 0
       selector:
         number:
@@ -169,7 +185,6 @@ actions:
       room_presence_entity_id: !input room_presence_entity
       delay_before_off_val: !input delay_before_off
       alternate_delay_val: !input alternate_delay
-      alternate_delay_cond: !input alternate_delay_condition
       light_check: !input light_entity_to_check
       suppress_sleeping: !input check_suppress_sleeping_child
       upstairs_timer: !input check_upstairs_timer
@@ -219,11 +234,11 @@ actions:
       - condition: template
         value_template: >-
           {% if check_not_sleeping %}
-            {{ room_presence_state not in sleeping_states }}
+            {{ is_state('input_boolean.sleep_mode', 'off') }}
           {% else %}
             true
           {% endif %}
-        alias: Room is not in a sleeping state (if enabled)
+        alias: House is not in sleep mode (if enabled)
       - condition: template
         value_template: >-
           {{ not light_check or is_state(light_check, 'off') }}
@@ -258,16 +273,21 @@ actions:
         condition: and
         conditions: !input additional_off_condition
       sequence:
-      - delay:
-          hours: 0
-          minutes: >-
-            {% if alternate_delay_cond %}
-              {{ alternate_delay_val }}
-            {% else %}
-              {{ delay_before_off_val }}
-            {% endif %}
-          seconds: 0
-        alias: Delay before turning off
+      - choose:
+        - alias: Use alternate delay
+          conditions: !input alternate_delay_condition
+          sequence:
+            - delay:
+                hours: 0
+                minutes: !input alternate_delay
+                seconds: 0
+              alias: Alternate delay before turning off
+        default:
+          - delay:
+              hours: 0
+              minutes: !input delay_before_off
+              seconds: 0
+            alias: Normal delay before turning off
       - choose: []
         default: !input turn_off_actions
       alias: Turn the light off after a delay
