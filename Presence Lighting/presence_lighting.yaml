@@ -12,7 +12,7 @@ blueprint:
     choose logic already handles these IDs.
   domain: automation
   input:
-    # ========== Required ==========
+    # ========== Room Setup ==========
     room_presence_entity:
       name: Room presence entity
       description: >
@@ -34,19 +34,7 @@ blueprint:
         entity:
           domain: light
 
-    delay_before_off:
-      name: Delay before off (minutes)
-      description: >
-        Minutes to wait after the room becomes unoccupied before turning off
-        the lights.
-      default: 5
-      selector:
-        number:
-          min: 0
-          max: 60
-          unit_of_measurement: minutes
-          mode: box
-
+    # ========== Turn-On ==========
     turn_on_actions:
       name: Turn-on actions
       description: >
@@ -57,6 +45,47 @@ blueprint:
       selector:
         action: {}
 
+    additional_on_condition:
+      name: Additional turn-on conditions
+      description: >
+        Extra conditions that must be met for the light to turn on. Use the
+        HA condition editor to add state checks, template conditions, time
+        ranges, etc. Leave empty (default) to skip.
+      default: []
+      selector:
+        condition: {}
+
+    check_room_not_sleeping:
+      name: Block turn-on when room is sleeping
+      description: >
+        When enabled, prevents lights from turning on if the room presence
+        is in a sleeping state (Going to Sleep, Sleeping, Waking Up). Disable
+        this for rooms like Kitchen that should turn on at low brightness
+        during sleep instead of blocking entirely.
+      default: true
+      selector:
+        boolean: {}
+
+    check_suppress_sleeping_child:
+      name: Check suppress lights for sleeping child
+      description: >
+        When enabled, the turn-on branch will only fire if
+        input_boolean.suppress_lights_for_sleeping_child is off.
+      default: false
+      selector:
+        boolean: {}
+
+    check_upstairs_timer:
+      name: Check upstairs lighting timer
+      description: >
+        When enabled, the variable "is_upstairs_timer_active" is set based on
+        timer.briefly_minimize_upstairs_lighting. Reference this variable in
+        your turn-on actions to adjust brightness or skip turning on.
+      default: false
+      selector:
+        boolean: {}
+
+    # ========== Turn-Off ==========
     turn_off_actions:
       name: Turn-off actions
       description: >
@@ -65,13 +94,21 @@ blueprint:
       selector:
         action: {}
 
-    # ========== Optional: Alternate Delay ==========
-    alternate_delay:
-      name: Alternate delay (minutes)
+    additional_off_condition:
+      name: Additional turn-off conditions
       description: >
-        A second delay value used when the alternate delay condition is true.
-        Set to 0 for instant off. Only takes effect when the condition below
-        evaluates to true. Ignored if the condition stays at its default.
+        Extra conditions that must be met for the light to turn off. Use the
+        HA condition editor to add state checks, template conditions, etc.
+        Leave empty (default) to skip.
+      default: []
+      selector:
+        condition: {}
+
+    delay_before_off:
+      name: Delay before off (minutes)
+      description: >
+        Minutes to wait after the room becomes unoccupied before turning off
+        the lights.
       default: 0
       selector:
         number:
@@ -93,64 +130,19 @@ blueprint:
         text:
           multiline: true
 
-    # ========== Optional: Boolean Flags ==========
-    check_suppress_sleeping_child:
-      name: Check suppress lights for sleeping child
+    alternate_delay:
+      name: Alternate delay (minutes)
       description: >
-        When enabled, the turn-on branch will only fire if
-        input_boolean.suppress_lights_for_sleeping_child is off.
-      default: false
+        A second delay value used when the alternate delay condition is true.
+        Set to 0 for instant off. Only takes effect when the condition above
+        evaluates to true.
+      default: 0
       selector:
-        boolean: {}
-
-    check_upstairs_timer:
-      name: Check upstairs lighting timer
-      description: >
-        When enabled, the variable "is_upstairs_timer_active" is set based on
-        timer.briefly_minimize_upstairs_lighting. Reference this variable in
-        your turn-on actions to adjust brightness or skip turning on.
-      default: false
-      selector:
-        boolean: {}
-
-    check_room_not_sleeping:
-      name: Block turn-on when room is sleeping
-      description: >
-        When enabled, prevents lights from turning on if the room presence
-        is in a sleeping state (Going to Sleep, Sleeping, Waking Up). Disable
-        this for rooms like Kitchen that should turn on at low brightness
-        during sleep instead of blocking entirely.
-      default: true
-      selector:
-        boolean: {}
-
-    # ========== Optional: Custom Conditions ==========
-    additional_on_condition:
-      name: Additional turn-on condition (template)
-      description: >
-        A Jinja2 template added to the turn-on conditions. Must evaluate
-        to true for the light to turn on. Use for room-specific checks like
-        theater mode, dinner party mode, nearby room lights, etc.
-        Examples:
-        {{ is_state('input_boolean.theater_mode', 'off') }}
-        {{ is_state('input_boolean.dinner_party_mode', 'on') or is_state('light.kitchen_table_switch', 'on') }}
-      default: "true"
-      selector:
-        text:
-          multiline: true
-
-    additional_off_condition:
-      name: Additional turn-off condition (template)
-      description: >
-        A Jinja2 template added to the turn-off conditions. Must evaluate
-        to true for the light to turn off. Use for checks like dinner party
-        mode, area occupancy sensors, etc.
-        Example:
-        {{ is_state('input_boolean.dinner_party_mode', 'off') }}
-      default: "true"
-      selector:
-        text:
-          multiline: true
+        number:
+          min: 0
+          max: 60
+          unit_of_measurement: minutes
+          mode: box
 
 mode: restart
 max_exceeded: silent
@@ -244,9 +236,9 @@ actions:
             true
           {% endif %}
         alias: Suppress lights for sleeping child (if enabled)
-      - condition: template
-        value_template: !input additional_on_condition
-        alias: Additional turn-on condition
+      - alias: Additional turn-on conditions
+        condition: and
+        conditions: !input additional_on_condition
       sequence: !input turn_on_actions
       alias: Turn the light on
 
@@ -262,9 +254,9 @@ actions:
         value_template: >-
           {{ not light_check or is_state(light_check, 'on') }}
         alias: Primary light is on (or check skipped)
-      - condition: template
-        value_template: !input additional_off_condition
-        alias: Additional turn-off condition
+      - alias: Additional turn-off conditions
+        condition: and
+        conditions: !input additional_off_condition
       sequence:
       - delay:
           hours: 0
