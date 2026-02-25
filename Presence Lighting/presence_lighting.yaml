@@ -43,6 +43,7 @@ blueprint:
       default: both
       selector:
         select:
+          mode: dropdown
           options:
             - label: Both
               value: both
