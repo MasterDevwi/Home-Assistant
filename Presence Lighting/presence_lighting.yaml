@@ -1,7 +1,12 @@
 blueprint:
   name: Presence Lighting
   description: >
-    Turns lights on and off based on room presence or another entity. Supports running any action, custom conditions, and custom delays based on a condition. Turn-on always first confirms that the room is not already occupied or sleeping. Also supports optional conditions for minimizing upstairs lighting or suppressing lighting when a child is sleeping.
+    Turns lights on and off based on room presence or another
+    entity. Supports running any action, custom conditions, and
+    custom delays based on a condition. Turn-on always first
+    confirms that the room is not already occupied or sleeping.
+    Also supports optional conditions for minimizing upstairs
+    lighting or suppressing lighting when a child is sleeping.
   domain: automation
   input:
     # ========== Room Setup ==========
@@ -16,7 +21,8 @@ blueprint:
     room_presence_trigger_mode:
       name: Use room presence for lighting
       description: >
-        Controls whether the lights should turn on and off with room presence.
+        Controls whether the lights should turn on and off with
+        room presence.
       default: both
       selector:
         select:
@@ -33,7 +39,10 @@ blueprint:
     light_entity_to_check:
       name: Primary light
       description: >
-        Confirm this light is off before turning it on or vice versa. Leave empty to skip this check (useful for rooms with complex multi-light logic handled in additional conditions).
+        Confirm this light is off before turning it on or vice
+        versa. Leave empty to skip this check (useful for rooms
+        with complex multi-light logic handled in additional
+        conditions).
       default: ""
       selector:
         entity:
@@ -72,7 +81,9 @@ blueprint:
     require_room_unoccupied_for_sensors:
       name: Confirm room is unoccupied
       description: >
-        Before turning on the light, ensure the room is unoccupied (prevents room state changes from turning the light back on when users want it off).
+        Before turning on the light, ensure the room is
+        unoccupied (prevents room state changes from turning
+        the light back on when users want it off).
       default: true
       selector:
         boolean: {}
@@ -80,7 +91,8 @@ blueprint:
     suppress_when_upstairs_minimized:
       name: Confirm upstairs lighting isn't minimized
       description: >
-        Before turning on the light, ensure minimize upstairs lighting isn't enabled.
+        Before turning on the light, ensure minimize upstairs
+        lighting isn't enabled.
       default: false
       selector:
         boolean: {}
@@ -88,7 +100,9 @@ blueprint:
     check_suppress_sleeping_child:
       name: Confirm lighting isn't suppressed for a sleeping child
       description: >
-        Before turning on the light, ensure suppress lights for sleeping child isn't enabled (avoids turning on the lights when arriving home with a sleeping child.
+        Before turning on the light, ensure suppress lights for
+        sleeping child isn't enabled (avoids turning on the
+        lights when arriving home with a sleeping child).
       default: false
       selector:
         boolean: {}
@@ -144,7 +158,9 @@ blueprint:
     alternate_delay_condition:
       name: Alternate delay condition
       description: >
-        Override the default delay when these conditions are met. Useful for scenarios like waiting longer to turn off the lights when a guest is visiting.
+        Override the default delay when these conditions are
+        met. Useful for scenarios like waiting longer to turn
+        off the lights when a guest is visiting.
       default: []
       selector:
         condition: {}
@@ -152,7 +168,8 @@ blueprint:
     alternate_delay:
       name: Alternate delay (minutes)
       description: >
-        How long to wait before turning off the lights if the alternate delay condition is met.
+        How long to wait before turning off the lights if the
+        alternate delay condition is met.
       default: 0
       selector:
         number:
