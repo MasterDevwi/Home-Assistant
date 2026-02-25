@@ -23,6 +23,36 @@ blueprint:
         entity:
           domain: input_select
 
+    room_presence_trigger_mode:
+      name: Room presence trigger mode
+      description: >
+        Controls whether the room presence entity triggers the turn-on
+        branch, the turn-off branch, both, or neither.
+
+        - Both (default): Room presence changes trigger both turn-on and
+          turn-off logic.
+        - Detect only: Room presence triggers turn-on but not turn-off.
+          Use for rooms where a separate sensor handles clearing.
+        - Clear only: Room presence triggers turn-off but not turn-on.
+          Use for rooms like the Hallway where a sensor detects presence
+          but room presence handles the off transition.
+        - Neither: Room presence does not trigger any lighting action.
+          Use for rooms like Stairs or Front Room Lamps where only
+          additional sensors drive the lights. The room presence entity
+          is still used as a condition to check occupancy state.
+      default: both
+      selector:
+        select:
+          options:
+            - label: Both
+              value: both
+            - label: Detect only
+              value: detect_only
+            - label: Clear only
+              value: clear_only
+            - label: Neither
+              value: neither
+
     light_entity_to_check:
       name: Primary light entity to check
       description: >
@@ -58,24 +88,6 @@ blueprint:
 
         The default (sun.sun) is a placeholder that never fires off→on.
         Replace it with binary_sensor entities for rooms that need them.
-      default:
-        - sun.sun
-      selector:
-        entity:
-          multiple: true
-
-    additional_clear_entities:
-      name: Additional clear entities
-      description: >
-        Entities that trigger the turn-off branch when they transition from
-        on to off. For rooms with area presence sensors, occupancy sensors,
-        or override toggles that should initiate a turn-off check.
-
-        If an entity should trigger both turn-on AND turn-off, add it to
-        both this list and the "Additional detect entities" list above.
-
-        The default (sun.sun) is a placeholder that never fires on→off.
-        Replace it with binary_sensor or input_boolean entities as needed.
       default:
         - sun.sun
       selector:
@@ -138,6 +150,24 @@ blueprint:
         boolean: {}
 
     # ========== Turn-Off ==========
+    additional_clear_entities:
+      name: Additional clear entities
+      description: >
+        Entities that trigger the turn-off branch when they transition from
+        on to off. For rooms with area presence sensors, occupancy sensors,
+        or override toggles that should initiate a turn-off check.
+
+        If an entity should trigger both turn-on AND turn-off, add it to
+        both this list and the "Additional detect entities" list above.
+
+        The default (sun.sun) is a placeholder that never fires on→off.
+        Replace it with binary_sensor or input_boolean entities as needed.
+      default:
+        - sun.sun
+      selector:
+        entity:
+          multiple: true
+
     turn_off_actions:
       name: Turn-off actions
       description: >
@@ -243,6 +273,7 @@ actions:
       suppress_sleeping: !input check_suppress_sleeping_child
       upstairs_timer: !input check_upstairs_timer
       check_not_sleeping: !input check_room_not_sleeping
+      rp_mode: !input room_presence_trigger_mode
       unoccupied_states:
         - Unknown
         - Extended Away
@@ -278,10 +309,16 @@ actions:
 
   - choose:
     - conditions:
-      - condition: trigger
-        id:
-          - room_presence_changes
-          - sensor_detected
+      - condition: template
+        value_template: >-
+          {% if trigger.id == 'sensor_detected' %}
+            true
+          {% elif trigger.id == 'room_presence_changes' %}
+            {{ rp_mode in ['both', 'detect_only'] }}
+          {% else %}
+            false
+          {% endif %}
+        alias: Trigger is a detect entity or room presence (if mode allows)
       - condition: template
         value_template: "{{ is_room_state_trigger_empty_to_occupied }}"
         alias: Room transitioned from empty to occupied
@@ -312,10 +349,16 @@ actions:
       alias: Turn the light on
 
     - conditions:
-      - condition: trigger
-        id:
-          - room_presence_changes
-          - sensor_cleared
+      - condition: template
+        value_template: >-
+          {% if trigger.id == 'sensor_cleared' %}
+            true
+          {% elif trigger.id == 'room_presence_changes' %}
+            {{ rp_mode in ['both', 'clear_only'] }}
+          {% else %}
+            false
+          {% endif %}
+        alias: Trigger is a clear entity or room presence (if mode allows)
       - condition: template
         value_template: "{{ room_presence_state in unoccupied_states }}"
         alias: Room is unoccupied
