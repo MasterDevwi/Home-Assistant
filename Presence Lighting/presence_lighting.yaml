@@ -324,6 +324,10 @@ actions:
         alias: Room transitioned from empty to occupied
       - condition: template
         value_template: >-
+          {{ states(room_presence_entity_id) not in sleeping_states }}
+        alias: Room is not in a sleeping state
+      - condition: template
+        value_template: >-
           {% if check_not_sleeping %}
             {{ is_state('input_boolean.sleep_mode', 'off') }}
           {% else %}
