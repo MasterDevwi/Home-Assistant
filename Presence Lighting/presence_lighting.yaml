@@ -91,18 +91,17 @@ blueprint:
       name: Confirm upstairs lighting isn't minimized
       description: >
         Before turning on the light, check whether upstairs
-        lighting is being minimized. Mode checks the timer,
-        Toggle checks the input_boolean, Both checks either.
+        lighting is being minimized.
       default: "off"
       selector:
         select:
           options:
             - label: "Off"
               value: "off"
+            - label: Timer
+              value: timer
             - label: Mode
               value: mode
-            - label: Toggle
-              value: toggle
             - label: Both
               value: both
 
@@ -299,9 +298,9 @@ actions:
         alias: Lighting isn't suppressed for a sleeping child (if enabled)
       - condition: template
         value_template: >-
-          {% if suppress_upstairs == 'mode' %}
+          {% if suppress_upstairs == 'timer' %}
             {{ not is_state('timer.briefly_minimize_upstairs_lighting', 'active') }}
-          {% elif suppress_upstairs == 'toggle' %}
+          {% elif suppress_upstairs == 'mode' %}
             {{ is_state('input_boolean.minimize_upstairs_lighting', 'off') }}
           {% elif suppress_upstairs == 'both' %}
             {{ not is_state('timer.briefly_minimize_upstairs_lighting', 'active') and is_state('input_boolean.minimize_upstairs_lighting', 'off') }}
