@@ -1,93 +1,53 @@
 blueprint:
   name: Presence Lighting
   description: >
-    Turns lights on and off based on room presence. Supports customizable
-    turn-on/off actions, alternate delays (for guests or nighttime), sleeping
-    child suppression, upstairs lighting timer checks, and arbitrary custom
-    conditions via templates.
-
-    Note: Lights will never turn on for a room whose presence state is
-    sleeping (Going to Sleep, Sleeping, Waking Up), because the turn-on
-    branch requires a transition from an unoccupied state (Empty, Extended
-    Away, Unknown) to an occupied state. Sleeping states are not unoccupied,
-    so they cannot produce that transition.
+    Turns lights on and off based on room presence or another entity. Supports running any action, custom conditions, and custom delays based on a condition. Turn-on always first confirms that the room is not already occupied or sleeping. Also supports optional conditions for minimizing upstairs lighting or suppressing lighting when a child is sleeping.
   domain: automation
   input:
     # ========== Room Setup ==========
     room_presence_entity:
       name: Room presence entity
       description: >
-        The input_select entity that tracks room presence
-        (e.g., input_select.presence_garage).
+        The input_select entity that tracks room presence.
       selector:
         entity:
           domain: input_select
 
     room_presence_trigger_mode:
-      name: Room presence trigger mode
+      name: Use room presence for lighting
       description: >
-        Controls whether the room presence entity triggers the turn-on
-        branch, the turn-off branch, both, or neither.
-
-        - Both (default): Room presence changes trigger both turn-on and
-          turn-off logic.
-        - Detect only: Room presence triggers turn-on but not turn-off.
-          Use for rooms where a separate sensor handles clearing.
-        - Clear only: Room presence triggers turn-off but not turn-on.
-          Use for rooms like the Hallway where a sensor detects presence
-          but room presence handles the off transition.
-        - Neither: Room presence does not trigger any lighting action.
-          Use for rooms like Stairs or Front Room Lamps where only
-          additional sensors drive the lights. The room presence entity
-          is still used as a condition to check occupancy state.
+        Controls whether the lights should turn on and off with room presence.
       default: both
       selector:
         select:
           options:
-            - label: Both
+            - label: Occupancy and vacancy
               value: both
-            - label: Detect only
+            - label: Occupancy only
               value: detect_only
-            - label: Clear only
+            - label: Vanancy only
               value: clear_only
-            - label: Neither
+            - label: Ignore room presence
               value: neither
 
     light_entity_to_check:
-      name: Primary light entity to check
+      name: Primary light
       description: >
-        The main light entity for this room. The turn-on branch checks this is
-        "off" before turning on, and the turn-off branch checks it is "on" before
-        turning off. Leave empty to skip the state check (useful for rooms with
-        complex multi-light logic handled in custom actions/conditions).
+        Confirm this light is off before turning it on or vice versa. Leave empty to skip this check (useful for rooms with complex multi-light logic handled in additional conditions).
       default: ""
       selector:
         entity:
           domain: light
 
     # ========== Turn-On ==========
-    turn_on_actions:
-      name: Turn-on actions
-      description: >
-        Actions to execute when turning the light on. Can be as simple as
-        calling a script (e.g., script.lighting_garage_on) or as complex as
-        a multi-step sequence with choose/if blocks for theater mode, brightness
-        levels, etc.
-      selector:
-        action: {}
-
     additional_detect_entities:
-      name: Additional detect entities
+      name: Additional turn-on entities
       description: >
-        Entities that trigger the turn-on branch when they transition from
-        off to on. For rooms with motion sensors, door contacts, or area
-        presence binary sensors. Select multiple entities if needed.
+        Additional entities that should turn on the light when they 
+        transition from off to on. 
 
-        If an entity should trigger both turn-on AND turn-off, add it to
-        both this list and the "Additional clear entities" list below.
-
-        The default (sun.sun) is a placeholder that never fires off→on.
-        Replace it with binary_sensor entities for rooms that need them.
+        If no entities are selected, the default (sun.sun) is required
+        to ensure the blueprint works.
       default:
         - sun.sun
       selector:
@@ -97,100 +57,73 @@ blueprint:
     additional_on_condition:
       name: Additional turn-on conditions
       description: >
-        Extra conditions that must be met for the light to turn on. Use the
-        HA condition editor to add state checks, template conditions, time
-        ranges, etc. Leave empty (default) to skip.
+        Extra conditions that must be met for the light to turn on.
 
-        The blueprint already checks these before turn-on:
-        - Global toggles are on (presence, lighting, vacation mode off)
-        - Room transitioned from empty/away to occupied
-        - Room is not in a sleeping state
-        - Primary light is currently off (if a light entity is set)
-        - Sleeping child suppression is not active (if that flag is enabled)
-
-        Use this input for room-specific logic not covered above, such as
-        theater mode, dinner party mode, or checking nearby room lights.
+        The blueprint has built-in checks for the following:
+        - Presence and lighting automations are enabled
+        - Vacation mode is off
+        - The room state is not sleeping
+        - The light is currently off (if a light entity is set above)
+        - Additional turn-on toggles below
       default: []
       selector:
         condition: {}
 
     require_room_unoccupied_for_sensors:
-      name: Require room unoccupied for sensor turn-on
+      name: Confirm room is unoccupied
       description: >
-        When enabled (default), additional detect entities will only trigger
-        the turn-on branch if the room presence entity is in an unoccupied
-        state (Empty, Extended Away, or Unknown). This prevents sensors from
-        re-running turn-on actions and adjusting lights when someone is
-        already in the room.
-
-        Disable this for rooms where the sensor should turn on lights
-        regardless of room presence state (e.g., a door contact that should
-        always trigger lights when opened).
+        Before turning on the light, ensure the room is unoccupied (prevents room state changes from turning the light back on when users want it off).
       default: true
       selector:
         boolean: {}
 
-    check_suppress_sleeping_child:
-      name: Check suppress lights for sleeping child
+    suppress_when_upstairs_minimized:
+      name: Confirm upstairs lighting isn't minimized
       description: >
-        When enabled, the turn-on branch will only fire if
-        input_boolean.suppress_lights_for_sleeping_child is off.
+        Before turning on the light, ensure minimize upstairs lighting isn't enabled.
       default: false
       selector:
         boolean: {}
 
-    suppress_when_upstairs_minimized:
-      name: Suppress turn-on when upstairs lighting is minimized
+    check_suppress_sleeping_child:
+      name: Confirm lighting isn't suppressed for a sleeping child
       description: >
-        When enabled, the turn-on branch will only fire if
-        timer.briefly_minimize_upstairs_lighting is not active. Use this
-        for upstairs rooms where lights should stay dim or off while the
-        minimize timer is running.
+        Before turning on the light, ensure suppress lights for sleeping child isn't enabled (avoids turning on the lights when arriving home with a sleeping child.
       default: false
       selector:
         boolean: {}
+
+    turn_on_actions:
+      name: Turn-on actions
+      description: >
+        Actions to take when the light should turn on.
+      selector:
+        action: {}
 
     # ========== Turn-Off ==========
     additional_clear_entities:
-      name: Additional clear entities
+      name: Additional turn-off entities
       description: >
-        Entities that trigger the turn-off branch when they transition from
-        on to off. For rooms with area presence sensors, occupancy sensors,
-        or override toggles that should initiate a turn-off check.
+        Additional entities that should turn off the light when they 
+        transition from on to off. 
 
-        If an entity should trigger both turn-on AND turn-off, add it to
-        both this list and the "Additional detect entities" list above.
-
-        The default (sun.sun) is a placeholder that never fires on→off.
-        Replace it with binary_sensor or input_boolean entities as needed.
+        If no entities are selected, the default (sun.sun) is required
+        to ensure the blueprint works.
       default:
         - sun.sun
       selector:
         entity:
           multiple: true
 
-    turn_off_actions:
-      name: Turn-off actions
-      description: >
-        Actions to execute when turning the light off (after the delay). Can
-        include script calls, fan turn-offs, inline light.turn_off, etc.
-      selector:
-        action: {}
-
     additional_off_condition:
       name: Additional turn-off conditions
       description: >
-        Extra conditions that must be met for the light to turn off. Use the
-        HA condition editor to add state checks, template conditions, etc.
-        Leave empty (default) to skip.
+        Extra conditions that must be met for the light to turn off.
 
-        The blueprint already checks these before turn-off:
-        - Global toggles are on (presence, lighting, vacation mode off)
-        - Room is in an unoccupied state (Unknown, Extended Away, or Empty)
-        - Primary light is currently on (if a light entity is set)
-
-        Use this input for room-specific logic not covered above, such as
-        dinner party mode or area occupancy sensors.
+        The blueprint has built-in checks for the following:
+        - Presence and lighting automations are enabled
+        - Vacation mode is off
+        - The light is currently on (if a light entity is set above)
       default: []
       selector:
         condition: {}
@@ -198,8 +131,7 @@ blueprint:
     delay_before_off:
       name: Delay before off (minutes)
       description: >
-        Minutes to wait after the room becomes unoccupied before turning off
-        the lights.
+        How long to wait before turning off the lights.
       default: 0
       selector:
         number:
@@ -212,11 +144,7 @@ blueprint:
     alternate_delay_condition:
       name: Alternate delay condition
       description: >
-        Conditions that, when ANY are met, cause the alternate delay to be
-        used instead of the normal delay. Use the HA condition editor to add
-        state checks, template conditions, etc. Leave empty (default) to
-        always use the normal delay.
-        Examples: guest mode is on, sleep mode is on, time is after 11pm.
+        Override the default delay when these conditions are met. Useful for scenarios like waiting longer to turn off the lights when a guest is visiting.
       default: []
       selector:
         condition: {}
@@ -224,8 +152,7 @@ blueprint:
     alternate_delay:
       name: Alternate delay (minutes)
       description: >
-        A second delay value used when the alternate delay condition above
-        is met. Set to 0 for instant off.
+        How long to wait before turning off the lights if the alternate delay condition is met.
       default: 0
       selector:
         number:
@@ -234,6 +161,13 @@ blueprint:
           step: 0.1
           unit_of_measurement: minutes
           mode: box
+
+    turn_off_actions:
+      name: Turn-off actions
+      description: >
+        Actions to take when the light should turn off.
+      selector:
+        action: {}
 
 mode: restart
 max_exceeded: silent
