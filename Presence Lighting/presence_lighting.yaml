@@ -98,10 +98,10 @@ blueprint:
           options:
             - label: "Off"
               value: "off"
-            - label: Timer
-              value: timer
             - label: Mode
               value: mode
+            - label: Timer
+              value: timer
             - label: Both
               value: both
 
