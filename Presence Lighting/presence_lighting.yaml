@@ -23,18 +23,18 @@ blueprint:
       description: >
         Controls whether the lights should turn on and off with
         room presence.
-      default: both
+      default: occupancy_and_vacancy
       selector:
         select:
           options:
             - label: Occupancy and vacancy
-              value: both
+              value: occupancy_and_vacancy
             - label: Occupancy only
-              value: detect_only
-            - label: Vanancy only
-              value: clear_only
+              value: occupancy_only
+            - label: Vacancy only
+              value: vacancy_only
             - label: Ignore room presence
-              value: neither
+              value: ignore_room_presence
 
     light_entity_to_check:
       name: Primary light
@@ -264,7 +264,7 @@ actions:
           {% if trigger.id == 'sensor_detected' %}
             true
           {% elif trigger.id == 'room_presence_changes' %}
-            {{ rp_mode in ['both', 'detect_only'] }}
+            {{ rp_mode in ['occupancy_and_vacancy', 'occupancy_only'] }}
           {% else %}
             false
           {% endif %}
@@ -308,7 +308,7 @@ actions:
           {% if trigger.id == 'sensor_cleared' %}
             true
           {% elif trigger.id == 'room_presence_changes' %}
-            {{ rp_mode in ['both', 'clear_only'] }}
+            {{ rp_mode in ['occupancy_and_vacancy', 'vacancy_only'] }}
           {% else %}
             false
           {% endif %}
