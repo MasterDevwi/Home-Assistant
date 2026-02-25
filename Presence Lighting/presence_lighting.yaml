@@ -68,12 +68,11 @@ blueprint:
       description: >
         Extra conditions that must be met for the light to turn on.
 
-        The blueprint has built-in checks for the following:
-        - Presence and lighting automations are enabled
-        - Vacation mode is off
-        - The room state is not sleeping
-        - The light is currently off (if a light entity is set above)
-        - Additional turn-on toggles below
+        The blueprint has built-in checks to ensure that presence and 
+        lighting automations are enabled, vacation mode is off, the 
+        room state is not sleeping, and the light is currently off (if
+        a light entity is set above). Plus the aditional turn-on 
+        toggles below.
       default: []
       selector:
         condition: {}
@@ -134,10 +133,10 @@ blueprint:
       description: >
         Extra conditions that must be met for the light to turn off.
 
-        The blueprint has built-in checks for the following:
-        - Presence and lighting automations are enabled
-        - Vacation mode is off
-        - The light is currently on (if a light entity is set above)
+        The blueprint has built-in checks to ensure that presence and 
+        lighting automations are enabled, vacation mode is off, the 
+        room state is empty, and the light is currently on (if a light 
+        entity is set above). Plus the aditional turn-on toggles below.
       default: []
       selector:
         condition: {}
