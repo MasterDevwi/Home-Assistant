@@ -166,7 +166,7 @@ Because the automation uses `mode: restart`, if someone re-enters the room durin
 
 A condition editor input. When **all** conditions in this list are met (AND logic), the alternate delay is used instead of the normal delay.
 
-An empty list (the default) evaluates to true, but since the alternate delay defaults to 0 and must be explicitly configured, this has no practical effect unless both an alternate delay value and conditions are set.
+The blueprint first checks that at least one enabled condition exists in the list. An empty list or a list where all conditions are disabled will always fall through to the normal delay. This prevents the alternate delay from taking over when no conditions are actively configured.
 
 Examples: guest mode is on, sleep mode is on, time is after 11 PM.
 
@@ -248,7 +248,7 @@ The turn-off branch fires when **all** of these conditions pass:
 
 If all conditions pass, the automation proceeds to the delay:
 
-5. **Delay selection:** If the alternate delay condition is met (all conditions in the list are true — AND logic), the alternate delay is used. Otherwise, the normal delay is used.
+5. **Delay selection:** If the alternate delay condition list has at least one enabled condition and all enabled conditions pass (AND logic), the alternate delay is used. Otherwise, the normal delay is used.
 6. **Wait:** The automation waits for the selected delay duration.
 7. **Turn-off actions:** After the delay, the turn-off actions execute.
 
