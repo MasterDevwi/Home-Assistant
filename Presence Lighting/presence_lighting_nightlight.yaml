@@ -1,0 +1,269 @@
+blueprint:
+  name: Presence Lighting for Nightlights
+  description: >
+    Manages a nightlight based on a "should be on" template
+    sensor that combines room occupancy and darkness. Supports
+    adjusting brightness when sleep mode changes, optional
+    conditions for upstairs lighting suppression, sleeping child
+    suppression, and babysitter mode.
+  domain: automation
+  input:
+    # ========== Nightlight Setup ==========
+    should_be_on_entity:
+      name: Nightlight sensor
+      description: >
+        A binary sensor indicating when the nightlight
+        should be on. Typically a template sensor that combines
+        room occupancy and ambient darkness.
+      selector:
+        entity:
+          domain: binary_sensor
+
+    light_entity_to_check:
+      name: Nightlight entity
+      description: >
+        The nightlight light entity. Used to confirm the light
+        is off before turning on and on before turning off.
+      selector:
+        entity:
+          domain: light
+
+    disable_for_babysitter:
+      name: Disable for babysitter
+      description: >
+        Disables this automation when a babysitter is over,
+        preventing the nightlight from turning on, off, or
+        adjusting.
+      default: false
+      selector:
+        boolean: {}
+
+    # ========== Sleep Mode Adjustment ==========
+    sleep_mode_entities:
+      name: Sleep mode entities
+      description: >
+        When any of these change state and the nightlight is
+        already on, re-call turn-on actions to adjust
+        brightness/color. Set to sun.sun to disable.
+      default:
+        - input_boolean.sleep_mode
+      selector:
+        entity:
+          multiple: true
+
+    # ========== Turn-On ==========
+    additional_on_condition:
+      name: Turn-on conditions
+      description: >
+        Conditions that must be met for the nightlight to turn
+        on. The blueprint has built-in checks to ensure that
+        presence and lighting automations are enabled, vacation
+        mode is off, and the light is currently off. Plus the
+        additional turn-on toggles below.
+      default: []
+      selector:
+        condition: {}
+
+    suppress_when_upstairs_minimized:
+      name: Confirm upstairs lighting isn't minimized
+      description: >
+        Before turning on the nightlight, check whether upstairs
+        lighting is being minimized.
+      default: "off"
+      selector:
+        select:
+          options:
+            - label: "Off"
+              value: "off"
+            - label: Check mode
+              value: mode
+            - label: Check timer
+              value: timer
+            - label: Check both
+              value: both
+
+    check_suppress_sleeping_child:
+      name: Confirm lighting isn't suppressed for a sleeping child
+      description: >
+        Before turning on the nightlight, ensure suppress lights
+        for sleeping child isn't enabled.
+      default: false
+      selector:
+        boolean: {}
+
+    turn_on_actions:
+      name: Turn-on actions
+      description: >
+        Actions to take when the nightlight should turn on.
+        Also called when sleep mode changes and the nightlight
+        is already on (to adjust brightness/color).
+      selector:
+        action: {}
+
+    # ========== Turn-Off ==========
+    additional_off_condition:
+      name: Turn-off conditions
+      description: >
+        Conditions that must be met for the nightlight to turn
+        off. The blueprint has built-in checks to ensure that
+        presence and lighting automations are enabled, vacation
+        mode is off, and the light is currently on.
+      default: []
+      selector:
+        condition: {}
+
+    delay_before_off:
+      name: Delay before off (minutes)
+      description: >
+        How long to wait before turning off the nightlight.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 60
+          step: 0.1
+          unit_of_measurement: minutes
+          mode: box
+
+    turn_off_actions:
+      name: Turn-off actions
+      description: >
+        Actions to take when the nightlight should turn off.
+      selector:
+        action: {}
+
+mode: restart
+max_exceeded: silent
+
+triggers:
+  - trigger: state
+    entity_id: !input should_be_on_entity
+    id: should_be_on_changed
+    alias: Should-be-on sensor changed
+
+  - trigger: state
+    entity_id: !input sleep_mode_entities
+    id: sleep_mode_changed
+    alias: Sleep mode entity changed
+
+conditions:
+  - condition: state
+    entity_id: input_boolean.presence_enable_automations
+    state: "on"
+  - condition: state
+    entity_id: input_boolean.enable_lighting_automations
+    state: "on"
+  - condition: state
+    entity_id: input_boolean.vacation_mode
+    state: "off"
+
+actions:
+  - variables:
+      light_check: !input light_entity_to_check
+      suppress_sleeping: !input check_suppress_sleeping_child
+      suppress_upstairs: !input suppress_when_upstairs_minimized
+      disable_babysitter: !input disable_for_babysitter
+    alias: Define variables
+
+  - choose:
+    # ===== TURN ON =====
+    - conditions:
+      - condition: trigger
+        id: should_be_on_changed
+        alias: Triggered by should-be-on sensor
+      - condition: state
+        entity_id: !input should_be_on_entity
+        state: "on"
+        alias: Should-be-on sensor is on
+      - condition: state
+        entity_id: !input light_entity_to_check
+        state: "off"
+        alias: Nightlight is currently off
+      - condition: template
+        value_template: >-
+          {% if suppress_sleeping %}
+            {{ is_state('input_boolean.suppress_lights_for_sleeping_child', 'off') }}
+          {% else %}
+            true
+          {% endif %}
+        alias: Lighting isn't suppressed for a sleeping child (if enabled)
+      - condition: template
+        value_template: >-
+          {% if disable_babysitter %}
+            {{ is_state('input_boolean.suppress_automations_for_babysitter', 'off') }}
+          {% else %}
+            true
+          {% endif %}
+        alias: Not disabled for babysitter (if enabled)
+      - condition: template
+        value_template: >-
+          {% if suppress_upstairs == 'timer' %}
+            {{ not is_state('timer.briefly_minimize_upstairs_lighting', 'active') }}
+          {% elif suppress_upstairs == 'mode' %}
+            {{ is_state('input_boolean.minimize_upstairs_lighting', 'off') }}
+          {% elif suppress_upstairs == 'both' %}
+            {{ not is_state('timer.briefly_minimize_upstairs_lighting', 'active') and is_state('input_boolean.minimize_upstairs_lighting', 'off') }}
+          {% else %}
+            true
+          {% endif %}
+        alias: Upstairs lighting isn't minimized (if enabled)
+      - alias: Additional turn-on conditions
+        condition: and
+        conditions: !input additional_on_condition
+      sequence: !input turn_on_actions
+      alias: Turn the nightlight on
+
+    # ===== TURN OFF =====
+    - conditions:
+      - condition: trigger
+        id: should_be_on_changed
+        alias: Triggered by should-be-on sensor
+      - condition: state
+        entity_id: !input should_be_on_entity
+        state: "off"
+        alias: Should-be-on sensor is off
+      - condition: state
+        entity_id: !input light_entity_to_check
+        state: "on"
+        alias: Nightlight is currently on
+      - condition: template
+        value_template: >-
+          {% if disable_babysitter %}
+            {{ is_state('input_boolean.suppress_automations_for_babysitter', 'off') }}
+          {% else %}
+            true
+          {% endif %}
+        alias: Not disabled for babysitter (if enabled)
+      - alias: Additional turn-off conditions
+        condition: and
+        conditions: !input additional_off_condition
+      sequence:
+      - delay:
+          hours: 0
+          minutes: !input delay_before_off
+          seconds: 0
+        alias: Delay before turning off
+      - choose: []
+        default: !input turn_off_actions
+      alias: Turn the nightlight off after a delay
+
+    # ===== ADJUST BRIGHTNESS =====
+    - conditions:
+      - condition: trigger
+        id: sleep_mode_changed
+        alias: Triggered by sleep mode change
+      - condition: state
+        entity_id: !input light_entity_to_check
+        state: "on"
+        alias: Nightlight is currently on
+      - condition: template
+        value_template: >-
+          {% if disable_babysitter %}
+            {{ is_state('input_boolean.suppress_automations_for_babysitter', 'off') }}
+          {% else %}
+            true
+          {% endif %}
+        alias: Not disabled for babysitter (if enabled)
+      sequence: !input turn_on_actions
+      alias: Adjust brightness on sleep mode change
+    alias: Turn on, off, or adjust the nightlight
