@@ -119,7 +119,7 @@ A condition editor input. All conditions listed here are evaluated with AND logi
 
 These are evaluated **after** all built-in checks (see [Turn-On Logic Flow](#turn-on-logic-flow) below). Use this for room-specific logic like theater mode, dinner party mode, time-of-day restrictions, or checking nearby room lights.
 
-#### Confirm room is unoccupied *(default: true)*
+#### Confirm room is unoccupied when turning on *(default: true)*
 
 Controls what happens when an additional turn-on entity fires while the room is already occupied:
 
@@ -162,6 +162,15 @@ The `sun.sun` default is a no-op placeholder (same mechanism as additional turn-
 #### Turn-off conditions *(default: empty)*
 
 A condition editor input. All conditions listed here are evaluated with AND logic. These are checked **after** the built-in checks (see [Turn-Off Logic Flow](#turn-off-logic-flow) below).
+
+#### Confirm room is unoccupied when turning off *(default: true)*
+
+Controls what happens when an additional turn-off entity clears while the room is still occupied:
+
+- **Enabled (default):** The turn-off entity only triggers turn-off if the room presence is in an unoccupied state (`Empty`, `Extended Away`, `Unknown`). This prevents sensors from turning off lights while someone is still in the room.
+- **Disabled:** The turn-off entity triggers turn-off regardless of room presence state. Useful for override toggles or sensors that should force lights off even when the room is occupied.
+
+> **Note:** This setting only applies to additional turn-off entities, not to the room presence entity itself. Room presence always requires the room to be unoccupied before turning off.
 
 #### Delay before off *(default: 0 minutes)*
 
@@ -250,7 +259,7 @@ If all conditions pass, the **turn-on actions** execute.
 The turn-off branch fires when **all** of these conditions pass:
 
 1. **Trigger routing:** The trigger must be either `sensor_cleared`, or `room_presence_changes` with the trigger mode set to `Occupancy and vacancy` or `Vacancy only`.
-2. **Room is unoccupied:** The room presence entity must be in an unoccupied state (`Unknown`, `Extended Away`, `Empty`).
+2. **Room is unoccupied:** If triggered by room presence, the room must be in an unoccupied state (`Unknown`, `Extended Away`, `Empty`). If triggered by a sensor, this check depends on the `Confirm room is unoccupied when turning off` setting — when enabled (default), the room must be unoccupied; when disabled, this check is skipped.
 3. **Light is on:** If a primary light entity is configured, it must be in the `on` state. If no light entity is set, this check is skipped.
 4. **Babysitter:** If `Disable for babysitter` is enabled, `input_boolean.suppress_automations_for_babysitter` must be `off`.
 5. **Additional conditions:** All conditions from the `Turn-off conditions` input must pass (AND logic).
