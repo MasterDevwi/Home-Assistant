@@ -87,7 +87,7 @@ blueprint:
         condition: {}
 
     require_room_unoccupied_for_sensors:
-      name: Confirm room is unoccupied
+      name: Confirm room is unoccupied when turning on
       description: >
         Before turning on the light, ensure the room is
         unoccupied (prevents additional conditions from 
@@ -158,6 +158,16 @@ blueprint:
       default: []
       selector:
         condition: {}
+
+    require_room_unoccupied_for_off_sensors:
+      name: Confirm room is unoccupied when turning off
+      description: >
+        Before turning off the light, ensure the room is
+        unoccupied (prevents additional conditions from
+        turning off the light when someone is in the room).
+      default: true
+      selector:
+        boolean: {}
 
     delay_before_off:
       name: Delay before off (minutes)
@@ -245,6 +255,7 @@ actions:
       suppress_upstairs: !input suppress_when_upstairs_minimized
       rp_mode: !input room_presence_trigger_mode
       require_unoccupied_for_sensors: !input require_room_unoccupied_for_sensors
+      require_unoccupied_for_off_sensors: !input require_room_unoccupied_for_off_sensors
       disable_babysitter: !input disable_for_babysitter
       alternate_delay_conds: !input alternate_delay_condition
       unoccupied_states:
@@ -345,8 +356,17 @@ actions:
           {% endif %}
         alias: Trigger is a turn-off entity or room presence (if mode allows)
       - condition: template
-        value_template: "{{ room_presence_state in unoccupied_states }}"
-        alias: Room is unoccupied
+        value_template: >-
+          {% if triggered_by_a_room %}
+            {{ room_presence_state in unoccupied_states }}
+          {% else %}
+            {% if require_unoccupied_for_off_sensors %}
+              {{ room_presence_state in unoccupied_states }}
+            {% else %}
+              true
+            {% endif %}
+          {% endif %}
+        alias: Room is unoccupied (or check skipped for sensors)
       - condition: template
         value_template: >-
           {{ not light_check or is_state(light_check, 'on') }}
