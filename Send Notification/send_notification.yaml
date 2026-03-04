@@ -305,8 +305,8 @@ sequence:
               title: "{{ title }}"
               message: "{{ message }}"
               data:
-                subtitle: "{{ subtitle }}"
-                subject: "{{ subject }}"
+                subtitle: "{{ subtitle | default(None) }}"
+                subject: "{{ subject | default(None) }}"
                 url: "{{ url }}"
                 clickAction: "{{ click_action }}"
                 icon_url: "{{ icon }}"
@@ -1267,4 +1267,6 @@ fields:
     description: The data to pass to the shortcut for this key (must be a string)
 mode: parallel
 max: 100
+
+
 
