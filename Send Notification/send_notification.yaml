@@ -20,6 +20,15 @@ sequence:
       HTML5 browsers or specific people)
   - variables:
       device_type: "{{ device_type | default('all') }}"
+      ignore_tag_html5: "{{ ignore_tag_html5 | default(false) }}"
+      notification_sound: "{{ notification_sound | default(none) }}"
+      alarm_stream: "{{ alarm_stream | default(none) }}"
+      alarm_stream_max: "{{ alarm_stream_max | default(none) }}"
+      critical_alert_volume: "{{ critical_alert_volume | default(1) }}"
+      hide_notification_when_open: "{{ hide_notification_when_open | default(false) }}"
+      badge: "{{ badge | default(none) }}"
+      critical_alert_tts_text: "{{ critical_alert_tts_text | default(none) }}"
+      hide_media_thumbnail: "{{ hide_media_thumbnail | default(false) }}"
       html5_endpoints: >
         {% if (device_type in ['all', 'web']) and (html5_endpoints_list[send_to]
         is defined) and (html5_endpoints_list[send_to] is not none) and
@@ -42,6 +51,8 @@ sequence:
       image: "{{ image | default(None) }}"
       video: "{{ video | default(None) }}"
       audio: "{{ audio | default(None) }}"
+      subtitle: "{{ subtitle | default(None) }}"
+      subject: "{{ subject | default(None) }}"
       camera: "{{ camera | default(\"none\") }}"
       attachment:
         hide-thumbnail: "{{ hide_media_thumbnail | default(false) }}"
@@ -123,6 +134,28 @@ sequence:
         "{{ ios_shortcut_key_4_name }}": "{{ ios_shortcut_key_4_value }}"
         "{{ ios_shortcut_key_5_name }}": "{{ ios_shortcut_key_5_value }}"
     alias: Define notification payload
+  - variables:
+      action_1_accept_text_input: "{{ action_1_accept_text_input | default(false) }}"
+      action_1_launch_app: "{{ action_1_launch_app | default(false) }}"
+      action_2_accept_text_input: "{{ action_2_accept_text_input | default(false) }}"
+      action_2_launch_app: "{{ action_2_launch_app | default(false) }}"
+      action_3_accept_text_input: "{{ action_3_accept_text_input | default(false) }}"
+      action_3_launch_app: "{{ action_3_launch_app | default(false) }}"
+      action_4_accept_text_input: "{{ action_4_accept_text_input | default(false) }}"
+      action_4_launch_app: "{{ action_4_launch_app | default(false) }}"
+      action_5_accept_text_input: "{{ action_5_accept_text_input | default(false) }}"
+      action_5_launch_app: "{{ action_5_launch_app | default(false) }}"
+      action_6_accept_text_input: "{{ action_6_accept_text_input | default(false) }}"
+      action_6_launch_app: "{{ action_6_launch_app | default(false) }}"
+      action_7_accept_text_input: "{{ action_7_accept_text_input | default(false) }}"
+      action_7_launch_app: "{{ action_7_launch_app | default(false) }}"
+      action_8_accept_text_input: "{{ action_8_accept_text_input | default(false) }}"
+      action_8_launch_app: "{{ action_8_launch_app | default(false) }}"
+      action_9_accept_text_input: "{{ action_9_accept_text_input | default(false) }}"
+      action_9_launch_app: "{{ action_9_launch_app | default(false) }}"
+      action_10_accept_text_input: "{{ action_10_accept_text_input | default(false) }}"
+      action_10_launch_app: "{{ action_10_launch_app | default(false) }}"
+    alias: Default optional action parameters
   - variables:
       action_1:
         - action: >-
@@ -1234,3 +1267,4 @@ fields:
     description: The data to pass to the shortcut for this key (must be a string)
 mode: parallel
 max: 100
+
