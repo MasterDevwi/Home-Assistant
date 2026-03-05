@@ -113,7 +113,7 @@ sequence:
             {%- endif %}
           "{{ \"critical\" if critical else \"disabled_critical\" }}": 1
           "{{ \"volume\" if critical else \"disabled_volume\" }}": "{{ critical_alert_volume | default(1) }}"
-        "{{ \"badge\" if badge is defined else \"disabled_badge\" }}": "{{ badge }}"
+        "{{ \"badge\" if badge is not none else \"disabled_badge\" }}": "{{ badge }}"
       ios_shortcut_name: "{{ ios_shortcut_name | default(None) }}"
       include_ios_shortcut: "{{ ios_shortcut_name is not none }}"
       ios_shortcut_key_1_name: "{{ ios_shortcut_key_1_name | default(None) }}"
@@ -305,8 +305,8 @@ sequence:
               title: "{{ title }}"
               message: "{{ message }}"
               data:
-                subtitle: "{{ subtitle | default(None) }}"
-                subject: "{{ subject | default(None) }}"
+                subtitle: "{{ subtitle }}"
+                subject: "{{ subject }}"
                 url: "{{ url }}"
                 clickAction: "{{ click_action }}"
                 icon_url: "{{ icon }}"
@@ -1267,6 +1267,3 @@ fields:
     description: The data to pass to the shortcut for this key (must be a string)
 mode: parallel
 max: 100
-
-
-
