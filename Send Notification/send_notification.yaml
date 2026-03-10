@@ -69,7 +69,7 @@ sequence:
       map_shows_traffic: "{{ map_shows_traffic | default(false) }}"
       map_shows_user_location: "{{ map_shows_user_location | default(false) }}"
       tag: "{{ tag | default(None) }}"
-      tag_html5: "{{ '' if ignore_tag_html5 else tag }}"
+      tag_html5: "{{ '' if (ignore_tag_html5 or tag is none) else tag }}"
       group: "{{ group | default(None) }}"
       critical: "{{ true if interruption_level == 'critical' else false }}"
       priority: "{{ 'high' if critical else 'normal' }}"
@@ -1267,3 +1267,4 @@ fields:
     description: The data to pass to the shortcut for this key (must be a string)
 mode: parallel
 max: 100
+
