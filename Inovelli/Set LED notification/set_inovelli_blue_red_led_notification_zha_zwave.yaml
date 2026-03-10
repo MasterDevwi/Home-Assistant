@@ -742,7 +742,7 @@ sequence:
               enabled: true
           enabled: true
 icon: mdi:led-on
-mode: parallel
+mode: queued
 max_exceeded: silent
 max: 100
 alias: Set Inovelli Blue/Red LED Notification
