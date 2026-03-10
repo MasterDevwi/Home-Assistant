@@ -63,13 +63,12 @@ fields:
             value: motion-detected
           - label: Waiting...
             value: waiting
+          - label: "Vacuum: Not docked"
+            value: vacuum-not-docked
+          - label: "Vacuum: Needs maintenance"
+            value: vacuum-needs-maintenance
           - label: Error occured
             value: error
-    name: Preset
-    description: >-
-      Select a preset (setting options below will override that portion of the
-      preset)
-    required: true
     default: custom
   led:
     name: LEDs
@@ -547,6 +546,18 @@ sequence:
           led_color: 195
           led_level: 33
           led_duration: 255
+        vacuum-not-docked:
+          led_number: -1
+          led_effect: "{{ effects['pulse'] }}"
+          led_color: 95
+          led_level: 33
+          led_duration: 255
+        vacuum-needs-maintenance:
+          led_number: -1
+          led_effect: "{{ effects['slow falling'] }}"
+          led_color: 95
+          led_level: 33
+          led_duration: 255
         error:
           led_number: -1
           led_effect: "{{ effects['fast blink'] }}"
@@ -654,6 +665,9 @@ sequence:
                   alias: Set the LEDs (Z-Wave)
               alias: Z-Wave
           enabled: true
+        - alias: Brief delay between devices to avoid Zigbee message limit
+          delay:
+            milliseconds: 150
         - alias: Clear individual LEDs if selected
           if:
             - alias: >-
@@ -720,6 +734,11 @@ sequence:
                             alias: Clear the individual LED (Z-Wave)
                         alias: Z-Wave
                     enabled: true
+                  - alias: >-
+                      Brief delay between LED clears to avoid Zigbee message
+                      limit
+                    delay:
+                      milliseconds: 100
               enabled: true
           enabled: true
 icon: mdi:led-on
