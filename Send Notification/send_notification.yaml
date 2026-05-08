@@ -401,7 +401,7 @@ sequence:
                       } -%}
                       {%- set ns = namespace(out={}) -%}
                       {%- for k, v in raw.items() -%}
-                        {%- if v not in [None, 'None', ''] -%}
+                        {%- if v not in [None, 'None', ''] and not (k == 'ttl' and v == 0) -%}
                           {%- set ns.out = dict(ns.out, **{k: v}) -%}
                         {%- endif -%}
                       {%- endfor -%}
