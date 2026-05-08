@@ -257,5 +257,193 @@ You have two options:
 
 ---
 
-I hope this helps a few folks! Please let me know if you have any feedback.
+## Migrating from raw `notify.notify_*` calls
 
+If you have existing automations and scripts that call the legacy `notify.notify_<group>` services directly (with `data: { ... }` payloads), this section is the field-by-field mapping to convert them to `script.send_notification`.
+
+### Top-level call
+
+| Before | After |
+|---|---|
+| `action: notify.notify_<group>` (or `service: notify.notify_<group>`) | `action: script.send_notification` |
+| top-level `data:` block | flatten — fields go directly under `data:` (no nested `data.data:`) |
+
+### Target / recipient
+
+| Before | After |
+|---|---|
+| `notify.notify_william` | `send_to: william` (no `notify_` prefix) |
+| Group sent to mixed mobile + web targets | (no extra config — the script auto-classifies group members by integration) |
+| `device_type` not set | defaults to `mobile`. Set `device_type: all` to also reach browsers, or `device_type: web` for browsers only |
+
+### Standard payload fields (rename / pass-through)
+
+| Old (under `data.data:` or `data:`) | New (under `data:`) | Notes |
+|---|---|---|
+| `tag` | `tag` | Same — used for replace/clear |
+| `group` | `group` | Same — iOS notification grouping |
+| `channel` (Android, equal to `group`) | `group` | Auto-merged |
+| `channel` (Android, **different** from `group`, e.g. `alarm_stream`) | `alarm_stream:` AND `alarm_stream_max:` | Set both to the channel value; the script picks one based on `critical` + `critical_alert_volume == 1` |
+| `subtitle` | `subtitle` | |
+| `image` | `image` | |
+| `video` | `video` | |
+| `audio` | `audio` | |
+| `ttl` | `ttl` | |
+| `subject` | `subject` | |
+| `url` | `url` | |
+| `clickAction` | `url` | Rename |
+| `icon` / `icon_url` | `icon` | |
+| `entity_id: camera.<x>` (deprecated) | `camera: camera.<x>` | |
+| `attachment.hide-thumbnail: true` | `hide_media_thumbnail: true` | |
+| `presentation_options: [badge, sound]` | `hide_notification_when_open: true` | iOS-only; suppresses banner when app is foregrounded |
+| `tts_text` (Android critical TTS) | `critical_alert_tts_text` | |
+
+### `push:` block (iOS payload)
+
+| Before | After |
+|---|---|
+| `push.sound.name: <custom.wav>` | `notification_sound: <custom.wav>` |
+| `push.sound.critical: 1` | `interruption_level: critical` |
+| `push.sound.volume: 0.75` | `critical_alert_volume: 0.75` (0.0–1.0; **not rescaled**) |
+| `push.badge: 5` | `badge: 5` |
+| `push.interruption-level: passive` | `interruption_level: passive` |
+| `push.category: camera` / `map` | drop — auto-derived from `camera:` / `map_latitude:` |
+| top-level `priority: high` (Android) | drop — auto-derived from `interruption_level` |
+| `media_stream` | drop — auto-derived from critical/volume |
+
+### Magic-string messages
+
+Some legacy calls use the `message:` field as a control signal rather than user-visible text. These now have a dedicated `notification_type:` field:
+
+| Old `message:` value | New `notification_type:` |
+|---|---|
+| `clear_notification` | `clear_notification` |
+| `delete_alert` | `delete_alert` |
+| `remove_channel` | `remove_channel` |
+| `request_location_update` | _(leave as `message:` for now — script passes it through; not yet a first-class option)_ |
+
+For all other calls, set `notification_type: notify` (or omit it — that's the default).
+
+### Action buttons (`actions:` list)
+
+The legacy nested list:
+
+```yaml
+data:
+  actions:
+    - action: UNLOCK_DOOR
+      title: Unlock
+      activationMode: foreground
+      authenticationRequired: true
+    - action: IGNORE
+      title: Ignore
+      destructive: true
+```
+
+becomes flat numbered fields (up to 10 actions):
+
+```yaml
+data:
+  action_1_id: UNLOCK_DOOR
+  action_1_title: Unlock
+  action_1_launch_app: true
+  action_1_authentication_required: true
+  action_2_id: IGNORE
+  action_2_title: Ignore
+  action_2_use_red_text: true
+```
+
+Per-action mapping:
+
+| Old (under `actions[i]`) | New |
+|---|---|
+| `action` | `action_N_id` (templated values like `'{{ action_close_garage_door_now }}'` work fine) |
+| `title` | `action_N_title` |
+| `icon` | `action_N_icon` |
+| `activationMode: foreground` | `action_N_launch_app: true` |
+| `authenticationRequired: true` | `action_N_authentication_required: true` |
+| `destructive: true` | `action_N_use_red_text: true` |
+| `uri: <deep-link>` | `action_N_launch_uri: <deep-link>` |
+| `behavior: textInput` | `action_N_accept_text_input: true` |
+
+> ⚠️ **10-action limit.** The script exposes `action_1_*` through `action_10_*`. If you have more than 10 buttons on a single notification, you'll need to either trim, split into multiple notifications, or extend the script.
+
+### iOS Shortcut trigger
+
+The legacy nested `shortcut:` block:
+
+```yaml
+data:
+  shortcut:
+    name: Sleep mode
+    source: ha_notification
+    intensity: 50
+```
+
+becomes flat numbered key/value pairs (up to 5):
+
+```yaml
+data:
+  ios_shortcut_name: Sleep mode
+  ios_shortcut_key_1_name: source
+  ios_shortcut_key_1_value: ha_notification
+  ios_shortcut_key_2_name: intensity
+  ios_shortcut_key_2_value: 50
+```
+
+### Quick before/after example
+
+**Before:**
+
+```yaml
+- alias: Notify family that the garage door is open
+  data:
+    title: Garage door
+    message: Open for 10 minutes
+    data:
+      tag: garage_door
+      group: garage
+      url: /lovelace-home/home
+      push:
+        sound:
+          name: default
+          critical: 1
+          volume: 1
+        interruption-level: critical
+      actions:
+        - action: '{{ action_close_garage }}'
+          title: Close now
+          activationMode: foreground
+        - action: IGNORE
+          title: Ignore
+          destructive: true
+  action: notify.notify_family
+```
+
+**After:**
+
+```yaml
+- alias: Notify family that the garage door is open
+  action: script.send_notification
+  data:
+    notification_type: notify
+    send_to: family
+    device_type: all
+    title: Garage door
+    message: Open for 10 minutes
+    tag: garage_door
+    group: garage
+    url: /lovelace-home/home
+    interruption_level: critical
+    critical_alert_volume: 1.0
+    action_1_id: '{{ action_close_garage }}'
+    action_1_title: Close now
+    action_1_launch_app: true
+    action_2_id: IGNORE
+    action_2_title: Ignore
+    action_2_use_red_text: true
+```
+
+---
+
+I hope this helps a few folks! Please let me know if you have any feedback.
