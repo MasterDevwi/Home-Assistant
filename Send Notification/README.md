@@ -8,6 +8,8 @@ To make this easier, I created a script with as many of the notification feature
 
 Note: I primarily use iOS, so I haven’t yet added some of the Android-only features like notification LED colors, alert once, etc. But it includes most other features so far. It also supports both mobile (iOS/Android) and HTML5 notifications.
 
+> ⚠️ **Set up this script before May 2026?** See [Migrating from a previous version](#️-migrating-from-a-previous-version) for breaking changes and required migration steps.
+
 ## Pre-requisites / setup instructions
 
 1. You must already have [mobile app](https://www.home-assistant.io/integrations/mobile_app/) and/or [HTML5 notifications](https://www.home-assistant.io/integrations/html5) set up.
@@ -226,6 +228,32 @@ data:
 - **Use `interruption_level: passive`** for low-priority informational notifications so they don't wake the screen on iOS.
 - **Test from Developer Tools → Actions** with `send_to: <yourself>` before wiring into automations.
 - **Check the trace** of the script run if a delivery fails — the error message usually points directly at a malformed entity_id, missing service, or schema rejection.
+
+---
+
+## ⚠️ Migrating from a previous version
+
+If you set up this script **before May 2026**, a few things changed that may need a one-time fix-up.
+
+### What's different now
+
+- **Browser (HTML5) notifications are picked up automatically.** You no longer need to maintain a list of which browsers belong to which person inside the script. If a browser is in the notify group you send to, it gets the notification.
+- **The script understands [HA's new notify groups](https://www.home-assistant.io/blog/2026/05/06/release-20265) directly.** It looks at the group's members and sends each one through the right channel (phone, browser, TV, etc.) — you don't have to think about it.
+- **A few new browser-only options** are available: `silent`, `require_interaction`, `renotify`, and `urgency`. Old calls keep working without them.
+
+### Migration steps
+
+You have two options:
+
+**Option 1 — Migrate to the new HA groups (more effort, but recommended for future-proofing)**
+1. Create a new notify group for each person (Settings → Devices & Services → Helpers → Create Helper → **Group** → **Notify group**) which includes both their mobile apps and their HMTL5 browsers. You can also create nested groups like `Parents` which includes multiple people, or `Family` which includes `Parents` and other people.
+2. Update the script's **Send to** selector options so each `value` matches the new group's entity ID (e.g. `family`, `parents`, `william`) — no `notify_` prefix.
+3. Update your existing notifications: replace `send_to: notify_family` with `send_to: family`, etc. (this is the part that will require the most effort)
+4. Leave any entries that point directly at a single notify entity (e.g. an LG TV's `notify.lg_living_room`) as-is — only group names need updating.
+
+**Option 2 — Keep your existing groups and `send_to` values (least effort for mobile compatibility, but uses old notify platform and "breaks" browsers)**
+1. Open the new script in Home Assistant and copy your old script's `send_to` selector options over (or click the **Send to** field's selector → **Edit options** and re-add each option with `value` set to your existing group names, e.g. `notify_family`, `notify_parents`, `notify_william`).
+2. **Browsers won't be reached automatically anymore.** The old script had a built-in list of which browsers belonged to each person; the new one doesn't. To send to browsers, you can create legacy notify service groups in notify.yaml. Or you can just add each browser separately in the script's **Send to** selector.
 
 ---
 
