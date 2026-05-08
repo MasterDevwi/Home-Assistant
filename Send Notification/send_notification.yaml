@@ -1,23 +1,28 @@
 alias: Send notification
 sequence:
   - variables:
-      william:
-        - Personal Laptop
-        - Work Laptop
-      amy:
-        - Work Laptop
-      babysitter:
-        - Guest Laptop
-      html5_endpoints_list:
-        notify_family: all
-        notify_parents: "{{ william + amy }}"
-        notify_parents_and_babysitter: "{{ william + amy + babysitter }}"
-        notify_william: "{{ william }}"
-        notify_amy: "{{ amy }}"
-    alias: >-
-      Map browsers (Note: To customize, add variables and device names for each
-      person and then for each Send To entity specify whether to notify all
-      HTML5 browsers or specific people)
+      group_entity: "notify.{{ send_to }}"
+      expanded_targets: "{{ expand(group_entity) | map(attribute='entity_id') | list }}"
+      html5_entities: "{{ integration_entities('html5') }}"
+      mobile_app_entities: "{{ integration_entities('mobile_app') }}"
+      all_targets: >-
+        {{ expanded_targets if (expanded_targets | count > 0) else [group_entity] }}
+      web_targets: "{{ all_targets | select('in', html5_entities) | list }}"
+      non_web_targets: "{{ all_targets | reject('in', html5_entities) | list }}"
+    alias: Resolve and classify targets (web vs non-web)
+  - variables:
+      non_web_dispatch: >-
+        {%- set ns = namespace(out=[]) -%}
+        {%- for e in non_web_targets -%}
+          {%- set slug = e.split('.')[1] -%}
+          {%- if e in mobile_app_entities -%}
+            {%- set ns.out = ns.out + ['notify.mobile_app_' ~ slug] -%}
+          {%- else -%}
+            {%- set ns.out = ns.out + [e] -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {{ ns.out }}
+    alias: Map non-web entities to legacy notify.
   - variables:
       device_type: "{{ device_type | default('all') }}"
       ignore_tag_html5: "{{ ignore_tag_html5 | default(false) }}"
@@ -29,21 +34,16 @@ sequence:
       badge: "{{ badge | default(none) }}"
       critical_alert_tts_text: "{{ critical_alert_tts_text | default(none) }}"
       hide_media_thumbnail: "{{ hide_media_thumbnail | default(false) }}"
-      html5_endpoints: >
-        {% if (device_type in ['all', 'web']) and (html5_endpoints_list[send_to]
-        is defined) and (html5_endpoints_list[send_to] is not none) and
-        (html5_endpoints_list[send_to] != 'all') %}
-          {{ html5_endpoints_list[send_to] }}
-        {% endif %}
-      html5_send_to_all: "{{ true if (html5_endpoints_list[send_to] == 'all') else false}}"
-      send_to_mobile: "{{ device_type in ['all', 'mobile'] }}"
-      send_to_web: >-
-        {{ (device_type in ['all', 'web']) and (send_to in html5_endpoints_list)
-        and (html5_endpoints is not none) }}
+      silent: "{{ silent | default(None) }}"
+      require_interaction: "{{ require_interaction | default(None) }}"
+      renotify: >-
+        {{ true if (ignore_tag_html5 | default(false)) else (renotify |
+        default(None)) }}
+      urgency: "{{ urgency | default(None) }}"
+      send_to_non_web: "{{ (device_type in ['all', 'mobile']) and (non_web_targets | count > 0) }}"
+      send_to_web: "{{ (device_type in ['all', 'web']) and (web_targets | count > 0) }}"
       notification_type: "{{ notification_type | default('notify') }}"
-      html5_dismiss: >-
-        {{ notification_type is defined and notification_type ==
-        'clear_notification' }}
+      is_dismiss: "{{ notification_type == 'clear_notification' }}"
       message: "{{ message if (notification_type == 'notify') else notification_type }}"
       url: "{{ url | default(None) }}"
       click_action: "{{ url | default(None) }}"
@@ -69,11 +69,10 @@ sequence:
       map_shows_traffic: "{{ map_shows_traffic | default(false) }}"
       map_shows_user_location: "{{ map_shows_user_location | default(false) }}"
       tag: "{{ tag | default(None) }}"
-      tag_html5: "{{ '' if (ignore_tag_html5 or tag is none) else tag }}"
       group: "{{ group | default(None) }}"
       critical: "{{ true if interruption_level == 'critical' else false }}"
       priority: "{{ 'high' if critical else 'normal' }}"
-      ttl: "{{ ttl if ttl is defined else (0 if critical else 86400) }}"
+      ttl: "{{ ttl if ttl is defined else (60 if critical else 86400) }}"
       tts_text: "{{ tts_text | default(none) }}"
       presentation_options: "{{ ['badge', 'sound'] if hide_notification_when_open else None }}"
       alarm_stream_mode: >-
@@ -292,181 +291,124 @@ sequence:
           None
         {% endif %}
     alias: Define actions
-  - alias: Send to the notification to mobile and/or web
+  - variables:
+      html5_actions: >-
+        {%- set all_actions = action_1 + action_2 + action_3 + action_4 +
+            action_5 + action_6 + action_7 + action_8 + action_9 + action_10 -%}
+        {%- set ns = namespace(out=[]) -%}
+        {%- for a in all_actions -%}
+          {%- if a.action not in ['URI', 'REPLY', None, 'None'] -%}
+            {%- set entry = {'action': a.action, 'title': a.title} -%}
+            {%- if a.icon and (a.icon not in [None, 'None', '']) -%}
+              {%- set entry = dict(entry, **{'icon': a.icon}) -%}
+            {%- endif -%}
+            {%- set ns.out = ns.out + [entry] -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {{ ns.out if (ns.out | count) > 0 else None }}
+      web_urgency: >-
+        {{ urgency if (urgency not in [None, 'None', '']) else ('high' if
+        critical else 'normal') }}
+    alias: Build HTML5 actions list and resolve web urgency
+  - variables:
+      html5_inner_data: >-
+        {%- set ns = namespace(out={}) -%}
+        {%- if url not in [None, 'None', ''] -%}
+          {%- set ns.out = dict(ns.out, **{'url': url}) -%}
+        {%- endif -%}
+        {{ ns.out }}
+    alias: Build HTML5 nested data extras (url only)
+  - alias: Dispatch to non-web and/or web targets
     parallel:
-      - alias: Send to mobile
+      - alias: Non-web dispatch (mobile_app, TVs, etc.)
         if:
-          - alias: The notification should be sent to all or mobile devices
-            condition: template
-            value_template: "{{ send_to_mobile }}"
+          - condition: template
+            value_template: "{{ send_to_non_web }}"
         then:
-          - alias: Send notification to mobile devices via the Home Assistant app
-            data:
-              title: "{{ title }}"
-              message: "{{ message }}"
-              data:
-                subtitle: "{{ subtitle }}"
-                subject: "{{ subject }}"
-                url: "{{ url }}"
-                clickAction: "{{ click_action }}"
-                icon_url: "{{ icon }}"
-                image: "{{ image }}"
-                video: "{{ video }}"
-                audio: "{{ audio }}"
-                entity_id: "{{ camera }}"
-                "{{ \"attachment\" if hide_media_thumbnail else \"disabled_attachment\" }}": "{{ attachment }}"
-                action_data: "{{ action_data }}"
-                tag: "{{ tag }}"
-                group: "{{ group }}"
-                channel: "{{ channel }}"
-                push: "{{ push }}"
-                priority: "{{ priority }}"
-                ttl: "{{ ttl }}"
-                media_stream: "{{ media_stream }}"
-                tts_text: "{{ critical_alert_tts_text }}"
-                presentation_options: "{{ presentation_options }}"
-                actions: "{{ actions }}"
-                "{{ \"shortcut\" if include_ios_shortcut else \"disabled_shortcut\" }}": "{{ shortcut }}"
-            action: notify.{{send_to}}
-      - alias: Send to web
+          - alias: Loop legacy notify.<service> per target
+            repeat:
+              for_each: "{{ non_web_dispatch }}"
+              sequence:
+                - alias: Call legacy notify.<service>
+                  action: "{{ repeat.item }}"
+                  data:
+                    title: "{{ title }}"
+                    message: "{{ message }}"
+                    data:
+                      subtitle: "{{ subtitle }}"
+                      subject: "{{ subject }}"
+                      url: "{{ url }}"
+                      clickAction: "{{ click_action }}"
+                      icon_url: "{{ icon }}"
+                      image: "{{ image }}"
+                      video: "{{ video }}"
+                      audio: "{{ audio }}"
+                      entity_id: "{{ camera }}"
+                      "{{ \"attachment\" if hide_media_thumbnail else \"disabled_attachment\" }}": "{{ attachment }}"
+                      action_data: "{{ action_data }}"
+                      tag: "{{ tag }}"
+                      group: "{{ group }}"
+                      channel: "{{ channel }}"
+                      push: "{{ push }}"
+                      priority: "{{ priority }}"
+                      ttl: "{{ ttl }}"
+                      media_stream: "{{ media_stream }}"
+                      tts_text: "{{ critical_alert_tts_text }}"
+                      presentation_options: "{{ presentation_options }}"
+                      actions: "{{ actions }}"
+                      "{{ \"shortcut\" if include_ios_shortcut else \"disabled_shortcut\" }}": "{{ shortcut }}"
+                  continue_on_error: true
+      - alias: Web (HTML5) dispatch
         if:
-          - alias: The notification should be sent to all devices or web endpoints
-            condition: template
+          - condition: template
             value_template: "{{ send_to_web }}"
         then:
-          - alias: Send to HTML5 devices based on targets and actions
-            choose:
-              - conditions:
+          - choose:
+              - alias: Dismiss web notification
+                conditions:
                   - condition: template
-                    value_template: "{{ html5_send_to_all}}"
-                    alias: Send to all HTML5 devices
+                    value_template: "{{ is_dismiss }}"
+                sequence:
+                  - alias: html5.dismiss_message by tag
+                    action: html5.dismiss_message
+                    target:
+                      entity_id: "{{ web_targets }}"
+                    data:
+                      tag: "{{ tag if tag else 'clear_notification' }}"
+              - alias: Send web notification
+                conditions:
                   - condition: template
-                    value_template: "{{ html5_dismiss }}"
-                    alias: Dismiss notification
+                    value_template: "{{ not is_dismiss }}"
                 sequence:
-                  - alias: Dismiss notification on all web endpoints (via HTML5)
-                    data:
-                      data:
-                        tag: "{{ tag }}"
-                    action: html5.dismiss
-                    enabled: true
-                alias: Dismiss on all HTML5 devices
-              - conditions:
-                  - alias: Send to specific HTML5 devices
-                    condition: template
-                    value_template: "{{ not html5_send_to_all}}"
-                  - condition: template
-                    value_template: "{{ html5_dismiss }}"
-                    alias: Dismiss notification
-                sequence:
-                  - alias: Dismiss notification on specific web endpoints (via HTML5)
-                    data:
-                      target: "{{ html5_endpoints }}"
-                      data:
-                        tag: "{{ tag }}"
-                    action: html5.dismiss
-                    enabled: true
-                alias: Dismiss on specific HTML5 devices
-              - conditions:
-                  - condition: template
-                    value_template: "{{ html5_send_to_all}}"
-                    alias: Send to all HTML5 devices
-                  - alias: The user has NOT specified custom actions
-                    condition: template
-                    value_template: "{{ actions is not defined or actions is none }}"
-                sequence:
-                  - alias: >-
-                      Send notification to all web endpoints (via HTML5) without
-                      actions
-                    data:
-                      title: "{{ title }}"
-                      message: "{{ message }}"
-                      data:
-                        url: "{{ url }}"
-                        tag: "{{ tag_html5 }}"
-                        group: "{{ group }}"
-                        priority: "{{ priority }}"
-                        badge: "{{ badge }}"
-                        ttl: "{{ ttl }}"
-                    action: notify.html5
-                    enabled: true
-                alias: Notify all HTML5 devices (without actions)
-              - conditions:
-                  - alias: Send to specific HTML5 devices
-                    condition: template
-                    value_template: "{{ not html5_send_to_all}}"
-                  - alias: The user has NOT specified custom actions
-                    condition: template
-                    value_template: "{{ actions is not defined or actions is none }}"
-                sequence:
-                  - alias: >-
-                      Send notification to specific web endpoints (via HTML5)
-                      without actions
-                    data:
-                      title: "{{ title }}"
-                      message: "{{ message }}"
-                      target: "{{ html5_endpoints }}"
-                      data:
-                        url: "{{ url }}"
-                        tag: "{{ tag_html5 }}"
-                        group: "{{ group }}"
-                        priority: "{{ priority }}"
-                        ttl: "{{ ttl }}"
-                        badge: "{{ badge }}"
-                    action: notify.html5
-                    enabled: true
-                alias: Notify specific HTML5 devices (without actions)
-              - conditions:
-                  - condition: template
-                    value_template: "{{ html5_send_to_all}}"
-                    alias: Send to all HTML5 devices
-                  - alias: The user has specified custom actions
-                    condition: template
-                    value_template: "{{ actions is defined and actions is not none }}"
-                sequence:
-                  - alias: >-
-                      Send notification to all web endpoints (via HTML5) with
-                      custom actions
-                    data:
-                      title: "{{ title }}"
-                      message: "{{ message }}"
-                      data:
-                        url: "{{ url }}"
-                        tag: "{{ tag_html5 }}"
-                        group: "{{ group }}"
-                        priority: "{{ priority }}"
-                        ttl: "{{ ttl }}"
-                        badge: "{{ badge }}"
-                        actions: "{{ actions }}"
-                    action: notify.html5
-                    enabled: true
-                alias: Notify all HTML5 devices (with actions)
-              - conditions:
-                  - alias: Send to specific HTML5 devices
-                    condition: template
-                    value_template: "{{ not html5_send_to_all}}"
-                  - alias: The user has specified custom actions
-                    condition: template
-                    value_template: "{{ actions is defined and actions is not none }}"
-                sequence:
-                  - alias: >-
-                      Send notification to specific web endpoints (via HTML5)
-                      with custom actions
-                    data:
-                      title: "{{ title }}"
-                      message: "{{ message }}"
-                      target: "{{ html5_endpoints }}"
-                      data:
-                        url: "{{ url }}"
-                        tag: "{{ tag_html5 }}"
-                        group: "{{ group }}"
-                        priority: "{{ priority }}"
-                        ttl: "{{ ttl }}"
-                        badge: "{{ badge }}"
-                        actions: "{{ actions }}"
-                    action: notify.html5
-                    enabled: true
-                alias: Notify specific HTML5 devices (with actions)
+                  - alias: html5.send_message
+                    action: html5.send_message
+                    target:
+                      entity_id: "{{ web_targets }}"
+                    data: >-
+                      {%- set raw = {
+                        'title': title,
+                        'message': message,
+                        'ttl': ttl,
+                        'urgency': web_urgency,
+                        'tag': tag,
+                        'icon': icon,
+                        'badge': badge,
+                        'image': image,
+                        'actions': html5_actions,
+                        'silent': silent,
+                        'require_interaction': require_interaction,
+                        'renotify': renotify
+                      } -%}
+                      {%- set ns = namespace(out={}) -%}
+                      {%- for k, v in raw.items() -%}
+                        {%- if v not in [None, 'None', ''] -%}
+                          {%- set ns.out = dict(ns.out, **{k: v}) -%}
+                        {%- endif -%}
+                      {%- endfor -%}
+                      {%- if html5_inner_data and (html5_inner_data | count) > 0 -%}
+                        {%- set ns.out = dict(ns.out, **{'data': html5_inner_data}) -%}
+                      {%- endif -%}
+                      {{ ns.out }}
     enabled: true
 description: >
   An easier way of sending notifications without having to remember the
@@ -495,19 +437,19 @@ fields:
     selector:
       select:
         options:
-          - value: notify_family
+          - value: family
             label: Family
-          - value: notify_parents
+          - value: parents
             label: Parents
-          - value: notify_parents_and_babysitter
+          - value: parents_and_babysitter
             label: Parents and babysitter
-          - value: notify_kids
+          - value: kids
             label: Kids
-          - value: notify_william
+          - value: william
             label: William
-          - value: notify_amy
+          - value: amy
             label: Amy
-          - value: notify_babysitter
+          - value: babysitter
             label: Babysitter
           - value: notify_tvs
             label: TVs
@@ -518,7 +460,7 @@ fields:
     name: Send to
     description: Who should the notification be sent to?
     required: true
-    default: notify_family
+    default: family
   device_type:
     selector:
       select:
@@ -526,7 +468,7 @@ fields:
           - value: all
             label: All devices
           - value: mobile
-            label: Phones and tablets (via mobile app notifications)
+            label: Phones, tablets, TVs, etc. (anything except web browsers)
           - value: web
             label: Web browsers (via HTML5 notifications)
         mode: dropdown
@@ -564,14 +506,12 @@ fields:
       text: null
     name: Tag
     description: For updating/replacing or clearing specific notifications
-  ignore_tag_html5:
+  renotify:
     selector:
       boolean: {}
-    name: Ignore tag for browsers
+    name: Always show notification for browsers
     description: >-
-      Enabling will not tag the notification for browsers (HTML5). This is
-      helpful for notifications you want to ensure are always shown so updates
-      in the notification center don't go unnoticed.
+      Ensure notifications with the same tag are shown rather than being silently updated.
   group:
     selector:
       text: null
@@ -597,6 +537,18 @@ fields:
       allowing it to be delivered silently or break through features like do not
       disturb (DND) or Focus profiles
     default: active
+  silent:
+    selector:
+      boolean: {}
+    name: Deliver silently for browsers
+    description: >-
+      Don't play a sound or vibrate when the notification is received.
+  require_interaction:
+    selector:
+      boolean: {}
+    name: Persist notification for browsers
+    description: >-
+      Keep the notification visible until the user interacts with it (no auto-hide).
   critical_alert_volume:
     selector:
       number:
@@ -607,13 +559,32 @@ fields:
     description: >-
       The volume level of the critical alert (on Android, anything less than 1
       will use the default volume)
+  urgency:
+    selector:
+      select:
+        options:
+          - value: very-low
+            label: Very low
+          - value: low
+            label: Low
+          - value: normal
+            label: Normal
+          - value: high
+            label: High
+        mode: dropdown
+    name: Urgency for browsers
+    required: false
+    description: >-
+      Web Push delivery urgency hint sent to the push service. If left blank,
+      this will be set to `high` when interruption level is `critical` and
+      `normal` otherwise.
   ttl:
     selector:
       number:
         min: 0
         max: 86400
         step: 1
-    name: TTL (Web/Android)
+    name: TTL (Android/browsers)
     description: >-
       If not set, critical notifications will be set to 0 and non-critical to
       86400
@@ -1267,4 +1238,3 @@ fields:
     description: The data to pass to the shortcut for this key (must be a string)
 mode: parallel
 max: 100
-
