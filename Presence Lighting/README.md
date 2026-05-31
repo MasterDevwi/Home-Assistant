@@ -30,7 +30,7 @@ These must exist in your HA instance. Every automation created from this bluepri
 |---|---|
 | `input_boolean.presence_enable_automations` | Must be **on** — master toggle for all presence automations |
 | `input_boolean.enable_lighting_automations` | Must be **on** — master toggle for all lighting automations |
-| `input_boolean.vacation_mode` | Must be **off** — disables presence lighting when on vacation |
+| `input_boolean.vacation_mode` | Must be **off** — disables presence lighting when on vacation (unless the automation opts out via `Respect vacation mode`) |
 
 ### Optional Global Helpers
 
@@ -100,6 +100,12 @@ Leave empty to skip the state check. This is useful for rooms with multiple inde
 When enabled, both the turn-on and turn-off branches are blocked if `input_boolean.suppress_automations_for_babysitter` is `on`. Use this for rooms where you want to completely disable automatic lighting when a babysitter is over.
 
 This is a **global condition** — it prevents both turn-on and turn-off actions from executing, leaving lights in whatever state the babysitter set them to manually.
+
+#### Respect vacation mode *(default: true)*
+
+When enabled (the default), the automation is blocked whenever `input_boolean.vacation_mode` is `on`. Disable this for lighting that should keep running while you're on vacation (for example, outdoors).
+
+This is a **global condition** — when disabled, vacation mode has no effect on this specific automation.
 
 ---
 
@@ -216,7 +222,7 @@ Before any logic runs, these three conditions must all pass:
 
 1. `input_boolean.presence_enable_automations` is **on**
 2. `input_boolean.enable_lighting_automations` is **on**
-3. `input_boolean.vacation_mode` is **off**
+3. `input_boolean.vacation_mode` is **off** — *skipped if `Respect vacation mode` is disabled on the automation*
 
 If any fail, the automation exits immediately.
 
