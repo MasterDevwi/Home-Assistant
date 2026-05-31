@@ -57,6 +57,16 @@ blueprint:
       selector:
         boolean: {}
 
+    respect_vacation_mode:
+      name: Respect vacation mode
+      description: >
+        When enabled (default), this automation is disabled while
+        vacation mode is on. Disable for outdoor lighting that
+        should keep running while on vacation (e.g. patio, porch).
+      default: true
+      selector:
+        boolean: {}
+
     # ========== Turn-On ==========
     additional_detect_entities:
       name: Additional turn-on entities
@@ -241,9 +251,11 @@ conditions:
   - condition: state
     entity_id: input_boolean.enable_lighting_automations
     state: "on"
-  - condition: state
-    entity_id: input_boolean.vacation_mode
-    state: "off"
+  - alias: Vacation mode is off (or this automation ignores vacation mode)
+    condition: template
+    value_template: >-
+      {{ not respect_vacation
+         or is_state('input_boolean.vacation_mode', 'off') }}
 
 actions:
   - variables:
@@ -257,6 +269,7 @@ actions:
       require_unoccupied_for_sensors: !input require_room_unoccupied_for_sensors
       require_unoccupied_for_off_sensors: !input require_room_unoccupied_for_off_sensors
       disable_babysitter: !input disable_for_babysitter
+      respect_vacation: !input respect_vacation_mode
       alternate_delay_conds: !input alternate_delay_condition
       unoccupied_states:
         - Unknown
