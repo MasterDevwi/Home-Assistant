@@ -138,8 +138,17 @@ max_exceeded: silent
 triggers:
   - trigger: state
     entity_id: !input should_be_on_entity
-    id: should_be_on_changed
-    alias: Should-be-on sensor changed
+    to: "on"
+    id: should_be_on
+    alias: Nightlight should turn on
+
+  - trigger: state
+    entity_id: !input should_be_on_entity
+    to: "off"
+    for:
+      minutes: !input delay_before_off
+    id: should_be_off
+    alias: Nightlight should turn off
 
   - trigger: state
     entity_id: !input sleep_mode_entities
@@ -169,8 +178,8 @@ actions:
     # ===== TURN ON =====
     - conditions:
       - condition: trigger
-        id: should_be_on_changed
-        alias: Triggered by should-be-on sensor
+        id: should_be_on
+        alias: Nightlight should turn on
       - condition: state
         entity_id: !input should_be_on_entity
         state: "on"
@@ -216,8 +225,8 @@ actions:
     # ===== TURN OFF =====
     - conditions:
       - condition: trigger
-        id: should_be_on_changed
-        alias: Triggered by should-be-on sensor
+        id: should_be_off
+        alias: Nightlight should turn off
       - condition: state
         entity_id: !input should_be_on_entity
         state: "off"
@@ -238,11 +247,6 @@ actions:
         condition: and
         conditions: !input additional_off_condition
       sequence:
-      - delay:
-          hours: 0
-          minutes: !input delay_before_off
-          seconds: 0
-        alias: Delay before turning off
       - choose: []
         default: !input turn_off_actions
       alias: Turn the nightlight off after a delay
@@ -252,6 +256,10 @@ actions:
       - condition: trigger
         id: sleep_mode_changed
         alias: Triggered by sleep mode change
+      - condition: state
+        entity_id: !input should_be_on_entity
+        state: "on"
+        alias: Nightlight should be on
       - condition: state
         entity_id: !input light_entity_to_check
         state: "on"
