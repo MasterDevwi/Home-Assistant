@@ -55,6 +55,7 @@ Only needed if you enable their corresponding flags in the blueprint UI:
 All automations created from this blueprint run in **`mode: restart`** with **`max_exceeded: silent`**:
 
 - **Restart** means if the automation is already running (e.g. waiting through a turn-off delay) and a new trigger fires, the running instance is cancelled and a fresh run starts. This is critical for the turn-off delay — if someone re-enters the room during the delay, the delay is cancelled and the turn-on branch fires instead.
+- Room-presence trigger directions disabled by `Use room presence for lighting` cannot fire, so an ignored occupancy or vacancy transition cannot cancel an active run.
 - **Silent** means if a trigger fires while the automation is restarting, no warning is logged.
 
 ---
@@ -206,15 +207,16 @@ The actions to execute when the light should turn off (after the delay has elaps
 
 ### Triggers
 
-Every automation created from this blueprint has exactly three triggers:
+Every automation created from this blueprint has four trigger definitions:
 
 | Trigger ID | Entity source | Fires when | Purpose |
 |---|---|---|---|
-| `room_presence_changes` | Room presence entity | Any state change | Detects occupancy transitions |
+| `room_became_occupied` | Room presence entity | Unoccupied → occupied | Turns on from room presence when the selected mode allows occupancy triggers |
+| `room_became_unoccupied` | Room presence entity | Occupied → unoccupied | Turns off from room presence when the selected mode allows vacancy triggers |
 | `sensor_detected` | Additional turn-on entities | `off` → `on` | Motion sensors, door contacts activating |
 | `sensor_cleared` | Additional turn-off entities | `on` → `off` | Area presence sensors, occupancy sensors clearing |
 
-All three triggers are always present. The `sun.sun` defaults ensure the detect/clear triggers exist but never fire unless you replace them with real entities.
+The two room-presence triggers are enabled according to `Use room presence for lighting`: both, occupancy only, vacancy only, or neither. Filtering at the trigger level prevents ignored room transitions from restarting the automation. The `sun.sun` defaults ensure the detect/clear triggers exist but never fire unless you replace them with real entities.
 
 ### Global Conditions
 
@@ -233,7 +235,7 @@ After the global conditions pass, the automation computes several variables used
 | Variable | Value |
 |---|---|
 | `room_presence_state` | Current state of the room presence entity |
-| `triggered_by_a_room` | `true` if the trigger entity starts with `input_select.presence_` |
+| `triggered_by_a_room` | `true` when the trigger ID is `room_became_occupied` or `room_became_unoccupied` |
 | `is_room_state_trigger_empty_to_occupied` | See below |
 
 **`is_room_state_trigger_empty_to_occupied`** is the key variable for the turn-on branch. Its value depends on what triggered the automation:
@@ -247,7 +249,7 @@ After the global conditions pass, the automation computes several variables used
 
 The turn-on branch fires when **all** of these conditions pass (evaluated in order):
 
-1. **Trigger routing:** The trigger must be either `sensor_detected`, or `room_presence_changes` with the trigger mode set to `Occupancy and vacancy` or `Occupancy only`.
+1. **Trigger routing:** The trigger must be either `sensor_detected` or `room_became_occupied`. The room trigger is enabled only when the selected mode allows occupancy triggers.
 2. **Empty-to-occupied transition:** `is_room_state_trigger_empty_to_occupied` must be `true` (see variable logic above).
 3. **Not sleeping:** The room presence entity must NOT be in a sleeping state (`Going to Sleep`, `Sleeping`, `Waking Up`). This is always enforced and cannot be disabled — sleeping rooms never get lights turned on.
 4. **Light is off:** If a primary light entity is configured, it must be in the `off` state. If no light entity is set, this check is skipped.
@@ -264,7 +266,7 @@ If all conditions pass, the **turn-on actions** execute.
 
 The turn-off branch fires when **all** of these conditions pass:
 
-1. **Trigger routing:** The trigger must be either `sensor_cleared`, or `room_presence_changes` with the trigger mode set to `Occupancy and vacancy` or `Vacancy only`.
+1. **Trigger routing:** The trigger must be either `sensor_cleared` or `room_became_unoccupied`. The room trigger is enabled only when the selected mode allows vacancy triggers.
 2. **Room is unoccupied:** If triggered by room presence, the room must be in an unoccupied state (`Unknown`, `Extended Away`, `Empty`). If triggered by a sensor, this check depends on the `Confirm room is unoccupied when turning off` setting — when enabled (default), the room must be unoccupied; when disabled, this check is skipped.
 3. **Light is on:** If a primary light entity is configured, it must be in the `on` state. If no light entity is set, this check is skipped.
 4. **Babysitter:** If `Disable for babysitter` is enabled, `input_boolean.suppress_automations_for_babysitter` must be `off`.
@@ -276,4 +278,4 @@ If all conditions pass, the automation proceeds to the delay:
 7. **Wait:** The automation waits for the selected delay duration.
 8. **Turn-off actions:** After the delay, the turn-off actions execute.
 
-> **Restart cancellation:** Because the automation uses `mode: restart`, if any trigger fires during the delay (step 7), the entire automation restarts from the beginning. If the new trigger routes to the turn-on branch, the lights stay on. If it routes to the turn-off branch again, the delay restarts from zero.
+> **Restart cancellation:** Because the automation uses `mode: restart`, if any enabled trigger fires during the delay (step 7), the entire automation restarts from the beginning. If the new trigger routes to the turn-on branch, the lights stay on. If it routes to the turn-off branch again, the delay restarts from zero. Room-presence directions disabled by the selected mode do not fire and therefore cannot cancel the delay.
