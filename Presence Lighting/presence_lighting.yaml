@@ -60,7 +60,7 @@ blueprint:
     respect_vacation_mode:
       name: Respect vacation mode
       description: >
-        When enabled (default), this automation is disabled while
+        When enabled (default), this automation is blocked while
         vacation mode is on. Disable for outdoor lighting that
         should keep running while on vacation (e.g. patio, porch).
       default: true
@@ -226,9 +226,13 @@ blueprint:
 mode: restart
 max_exceeded: silent
 
+trigger_variables:
+  room_presence_trigger_mode: !input room_presence_trigger_mode
+
 triggers:
   - trigger: state
     entity_id: !input room_presence_entity
+    enabled: "{{ room_presence_trigger_mode != 'ignore_room_presence' }}"
     id: room_presence_changes
     alias: Room presence changes
   - trigger: state
