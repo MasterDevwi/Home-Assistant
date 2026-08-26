@@ -226,6 +226,9 @@ blueprint:
 mode: restart
 max_exceeded: silent
 
+variables:
+  respect_vacation: !input respect_vacation_mode
+
 trigger_variables:
   room_presence_trigger_mode: !input room_presence_trigger_mode
 
@@ -297,7 +300,6 @@ actions:
       require_unoccupied_for_sensors: !input require_room_unoccupied_for_sensors
       require_unoccupied_for_off_sensors: !input require_room_unoccupied_for_off_sensors
       disable_babysitter: !input disable_for_babysitter
-      respect_vacation: !input respect_vacation_mode
       alternate_delay_conds: !input alternate_delay_condition
       unoccupied_states:
         - Unknown
