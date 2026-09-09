@@ -6,7 +6,8 @@ sequence:
       html5_entities: "{{ integration_entities('html5') }}"
       mobile_app_entities: "{{ integration_entities('mobile_app') }}"
       all_targets: >-
-        {{ expanded_targets if (expanded_targets | count > 0) else [group_entity] }}
+        {{ (expanded_targets if (expanded_targets | count > 0) else [group_entity])
+        | select('has_value') | list }}
       web_targets: "{{ all_targets | select('in', html5_entities) | list }}"
       non_web_targets: "{{ all_targets | reject('in', html5_entities) | list }}"
     alias: Resolve and classify targets (web vs non-web)

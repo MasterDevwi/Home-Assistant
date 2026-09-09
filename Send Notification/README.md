@@ -46,6 +46,8 @@ The recommended path is **UI group helpers**:
 
 The script uses `expand()` on the chosen group, so any combination of mobile, web, and TV targets in one group works correctly — each member is dispatched via the right action automatically.
 
+Unavailable members are skipped before dispatch. A stale browser, phone, or other notify entity therefore won't prevent notifications from reaching the available members of the same group. A direct call whose only target is unavailable completes without sending anything.
+
 (YAML notify groups in `configuration.yaml` also work; they expand the same way.)
 
 ### Other things worth knowing
@@ -54,7 +56,7 @@ The script uses `expand()` on the chosen group, so any combination of mobile, we
 - **Why the legacy `notify.<service>` call is still used for mobile**: HA's modern `notify.send_message` action only accepts `message` and `title` — no `data:` block. Until HA expands the entity schema to accept rich payloads, the per-service legacy call is the only way to deliver images, actions, sounds, badges, critical alerts, etc. to mobile_app and TV targets. HTML5 has its own dedicated rich entity schema, so it uses the modern action.
 - **Script mode**: `parallel` with `max: 100`. You can fire many notifications in rapid succession without queueing.
 - **Single target per call**: Each invocation targets exactly one `send_to` group/entity. To notify multiple groups, call the script multiple times (or wrap it in a parent script that fans out).
-- **Failures are non-fatal**: The non-web branch uses `continue_on_error: true` per target, so one offline phone won't stop the rest of the group from receiving the notification.
+- **Failures are non-fatal**: Unavailable entities are removed before dispatch, and the non-web branch uses `continue_on_error: true` per remaining target. One unavailable or failing target won't stop the rest of the group from receiving the notification.
 
 ---
 
