@@ -267,30 +267,20 @@ sequence:
           destructive: "{{ action_10_use_red_text | default(false) }}"
           uri: "{{ action_10_launch_uri | default(None) }}"
           behavior: "{{ 'textInput' if action_10_accept_text_input else None }}"
-      actions: |
-        {% if action_10_id is defined %}
-          {{ action_1 + action_2 + action_3 + action_4 + action_5 + action_6 + action_7 + action_8 + action_9 + action_10 }}
-        {% elif action_9_id is defined %}
-          {{ action_1 + action_2 + action_3 + action_4 + action_5 + action_6 + action_7 + action_8 + action_9 }}
-        {% elif action_8_id is defined %}
-          {{ action_1 + action_2 + action_3 + action_4 + action_5 + action_6 + action_7 + action_8 }}
-        {% elif action_7_id is defined %}
-          {{ action_1 + action_2 + action_3 + action_4 + action_5 + action_6 + action_7 }}
-        {% elif action_6_id is defined %}
-          {{ action_1 + action_2 + action_3 + action_4 + action_5 + action_6 }}
-        {% elif action_5_id is defined %}
-          {{ action_1 + action_2 + action_3 + action_4 + action_5 }}
-        {% elif action_4_id is defined %}
-          {{ action_1 + action_2 + action_3 + action_4 }}
-        {% elif action_3_id is defined %}
-          {{ action_1 + action_2 + action_3 }}
-        {% elif action_2_id is defined %}
-          {{ action_1 + action_2 }}
-        {% elif action_1_id is defined %}
-          {{ action_1 }}
-        {% else %}
-          None
-        {% endif %}
+      actions: >-
+        {%- set candidates = action_1 + action_2 + action_3 + action_4 + action_5
+        + action_6 + action_7 + action_8 + action_9 + action_10 -%}
+        {%- set ns = namespace(out=[]) -%}
+        {%- for candidate in candidates
+        if candidate.action not in [None, 'None', ''] -%}
+          {%- set item = namespace(out={}) -%}
+          {%- for key, value in candidate.items()
+          if value not in [None, 'None', ''] -%}
+            {%- set item.out = dict(item.out, **{key: value}) -%}
+          {%- endfor -%}
+          {%- set ns.out = ns.out + [item.out] -%}
+        {%- endfor -%}
+        {{ ns.out if (ns.out | count) > 0 else None }}
     alias: Define actions
   - variables:
       html5_actions: >-
