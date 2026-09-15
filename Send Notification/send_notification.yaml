@@ -45,7 +45,8 @@ sequence:
       send_to_web: "{{ (device_type in ['all', 'web']) and (web_targets | count > 0) }}"
       notification_type: "{{ notification_type | default('notify') }}"
       is_dismiss: "{{ notification_type == 'clear_notification' }}"
-      message: "{{ message if (notification_type == 'notify') else notification_type }}"
+      title: "{{ title | default('') }}"
+      message: "{{ message | default('') if (notification_type == 'notify') else notification_type }}"
       url: "{{ url | default(None) }}"
       click_action: "{{ url | default(None) }}"
       icon: "{{ icon | default(None) }}"
@@ -96,14 +97,7 @@ sequence:
         "{{ \"shows_user_location\" if map_shows_user_location else \"disabled_shows_user_location\" }}": "{{ map_shows_user_location }}"
       push:
         interruption-level: "{{ interruption_level | default('active') }}"
-        category: |
-          {%- if camera != "none" %}
-            camera
-          {%- elif map_latitude != "none" %}
-            map
-          {%- else %}
-            {{ default }}
-          {%- endif %}
+        "{{ \"category\" if (camera != \"none\" or map_latitude is not none) else \"disabled_category\" }}": '{%- if camera != "none" %}camera{%- else %}map{%- endif %}'
         sound:
           name: |
             {%- if notification_sound %}
@@ -392,7 +386,7 @@ sequence:
                       } -%}
                       {%- set ns = namespace(out={}) -%}
                       {%- for k, v in raw.items() -%}
-                        {%- if v not in [None, 'None', ''] and not (k == 'ttl' and v == 0) -%}
+                        {%- if v not in [None, 'None', ''] and not (k == 'ttl' and (v | int(-1)) == 0) -%}
                           {%- set ns.out = dict(ns.out, **{k: v}) -%}
                         {%- endif -%}
                       {%- endfor -%}
@@ -436,10 +430,10 @@ fields:
             label: Parents and babysitter
           - value: kids
             label: Kids
-          - value: william
-            label: William
-          - value: amy
-            label: Amy
+          - value: person_1
+            label: Person 1
+          - value: person_2
+            label: Person 2
           - value: babysitter
             label: Babysitter
           - value: notify_tvs
