@@ -430,10 +430,10 @@ fields:
             label: Parents and babysitter
           - value: kids
             label: Kids
-          - value: person_1
-            label: Person 1
-          - value: person_2
-            label: Person 2
+          - value: william
+            label: William
+          - value: amy
+            label: Amy
           - value: babysitter
             label: Babysitter
           - value: notify_tvs

@@ -25,10 +25,10 @@ Home Assistant exposes notify targets in two parallel forms:
 
 | Form | Example | Used by |
 |---|---|---|
-| Modern entity | `notify.williams_iphone` | UI group helpers, `html5.send_message`, `expand()` |
-| Legacy service | `notify.mobile_app_williams_iphone` | The actual `action:` call this script makes for non-HTML5 targets |
+| Modern entity | `notify.alexs_iphone` | UI group helpers, `html5.send_message`, `expand()` |
+| Legacy service | `notify.mobile_app_alexs_iphone` | The actual `action:` call this script makes for non-HTML5 targets |
 
-For **mobile_app** entities, the legacy service is always `notify.mobile_app_<entity_slug>` — the script auto-prepends `mobile_app_`. **The entity slug must match the slug HA assigned at registration time.** If you rename the entity in the UI (e.g. `notify.william_s_iphone` → something else), the legacy service slug stays locked to the original and dispatch will fail with `Action notify.<name> not found`. The fix is to rename the entity back so its slug matches the registered service name (check Developer Tools → Actions for the actual `notify.mobile_app_*` service name and rename the entity to match). 
+For **mobile_app** entities, the legacy service is always `notify.mobile_app_<entity_slug>` — the script auto-prepends `mobile_app_`. **The entity slug must match the slug HA assigned at registration time.** If you rename the entity in the UI (e.g. `notify.alex_s_iphone` → something else), the legacy service slug stays locked to the original and dispatch will fail with `Action notify.<name> not found`. The fix is to rename the entity back so its slug matches the registered service name (check Developer Tools → Actions for the actual `notify.mobile_app_*` service name and rename the entity to match). 
 
 Note: Eventually this script will migrate to use the new modern entities for sending the notification. See below for more details.
 
