@@ -13,3 +13,8 @@ A Home Assistant script allowing you to define custom presets for the LED notifi
    1. Edit the list of presets in the **Define presets** variables. All properties match the standard Inovelli Blue LED properties. Set led_number to -1 to target all LEDs at once.
    2. In the preset field, expand the selector options and edit the list to match the custom presets you just configured
 3. You can now call this script in any of your automations!
+
+## Target and LED selection
+* Target resolution accepts both `light` and `fan` entities when selecting entities, devices, or areas.
+* ZHA commands use the final LED selection, including LED overrides on presets: `All` uses the full-bar command, while an individual LED uses the individual-LED command.
+* Custom effects do not require a `custom` entry in the presets mapping.
