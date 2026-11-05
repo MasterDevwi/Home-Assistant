@@ -11,8 +11,9 @@ A Home Assistant automation blueprint that turns lights on and off based on room
 - [Automation Mode](#automation-mode)
 - [Inputs Reference](#inputs-reference)
   - [Room Setup](#room-setup)
-  - [Turn-On](#turn-on)
-  - [Turn-Off](#turn-off)
+  - [Advanced Settings](#advanced-settings)
+  - [Turn-On Settings](#turn-on-settings)
+  - [Turn-Off Settings](#turn-off-settings)
 - [How It Works](#how-it-works)
   - [Triggers](#triggers)
   - [Global Conditions](#global-conditions)
@@ -62,6 +63,17 @@ All automations created from this blueprint run in **`mode: restart`** with **`m
 
 ## Inputs Reference
 
+Both the main and nightlight blueprints organize their inputs into four expandable sections:
+
+| Section | Contents | Initially |
+|---|---|---|
+| **Room setup** | Presence/nightlight sensor, primary light, and room-presence trigger mode where applicable | Expanded |
+| **Advanced settings** | Babysitter override, vacation-mode override (main blueprint), and sleep-mode adjustment entities (nightlight blueprint) | Collapsed |
+| **Turn-on settings** | Turn-on entities where applicable, conditions, safeguards, and actions | Expanded |
+| **Turn-off settings** | Turn-off entities where applicable, conditions, delays, and actions | Expanded |
+
+Sections require Home Assistant **2024.6 or newer**. Collapsing a section only folds its controls; its configured values still apply. Input keys, defaults, and automation behavior are unchanged, so existing automations do not need to be recreated. These sections do not use conditional visibility or add behavior switches.
+
 ### Room Setup
 
 #### Room presence entity *(required)*
@@ -96,6 +108,8 @@ A `light.*` entity. When set:
 
 Leave empty to skip the state check. This is useful for rooms with multiple independent lights where the on/off logic is handled in custom actions or conditions.
 
+### Advanced Settings
+
 #### Disable for babysitter *(default: false)*
 
 When enabled, both the turn-on and turn-off branches are blocked if `input_boolean.suppress_automations_for_babysitter` is `on`. Use this for rooms where you want to completely disable automatic lighting when a babysitter is over.
@@ -110,7 +124,7 @@ This is a **global condition** — when disabled, vacation mode has no effect on
 
 ---
 
-### Turn-On
+### Turn-On Settings
 
 #### Additional turn-on entities *(default: sun.sun)*
 
@@ -158,7 +172,7 @@ The actions to execute when the light should turn on. Can be as simple as callin
 
 ---
 
-### Turn-Off
+### Turn-Off Settings
 
 #### Additional turn-off entities *(default: sun.sun)*
 

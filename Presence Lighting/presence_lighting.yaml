@@ -8,220 +8,239 @@ blueprint:
     Also supports optional conditions for minimizing upstairs
     lighting or suppressing lighting when a child is sleeping.
   domain: automation
+  homeassistant:
+    min_version: "2024.6.0"
   input:
-    # ========== Room Setup ==========
-    room_presence_entity:
-      name: Room presence entity
-      description: >
-        The input_select entity that tracks room presence.
-      selector:
-        entity:
-          domain: input_select
+    room_setup:
+      name: Room setup
+      icon: mdi:home-outline
+      collapsed: false
+      input:
+        room_presence_entity:
+          name: Room presence entity
+          description: >
+            The input_select entity that tracks room presence.
+          selector:
+            entity:
+              domain: input_select
 
-    room_presence_trigger_mode:
-      name: Use room presence for lighting
-      description: >
-        Controls whether the lights should turn on and off with
-        room presence.
-      default: occupancy_and_vacancy
-      selector:
-        select:
-          options:
-            - label: Occupancy and vacancy
-              value: occupancy_and_vacancy
-            - label: Occupancy only
-              value: occupancy_only
-            - label: Vacancy only
-              value: vacancy_only
-            - label: Ignore room presence
-              value: ignore_room_presence
+        room_presence_trigger_mode:
+          name: Use room presence for lighting
+          description: >
+            Controls whether the lights should turn on and off with
+            room presence.
+          default: occupancy_and_vacancy
+          selector:
+            select:
+              options:
+                - label: Occupancy and vacancy
+                  value: occupancy_and_vacancy
+                - label: Occupancy only
+                  value: occupancy_only
+                - label: Vacancy only
+                  value: vacancy_only
+                - label: Ignore room presence
+                  value: ignore_room_presence
 
-    light_entity_to_check:
-      name: Primary light
-      description: >
-        Confirm this light is off before turning it on or vice
-        versa. Leave empty to skip this check (useful for rooms
-        with complex multi-light logic handled in additional
-        conditions).
-      default: ""
-      selector:
-        entity:
-          domain: light
+        light_entity_to_check:
+          name: Primary light
+          description: >
+            Confirm this light is off before turning it on or vice
+            versa. Leave empty to skip this check (useful for rooms
+            with complex multi-light logic handled in additional
+            conditions).
+          default: ""
+          selector:
+            entity:
+              domain: light
 
-    disable_for_babysitter:
-      name: Disable for babysitter
-      description: >
-        Disables this automation when a babysitter is over,
-        preventing the light from turning on or off.
-      default: false
-      selector:
-        boolean: {}
+    advanced_settings:
+      name: Advanced settings
+      icon: mdi:cog-outline
+      collapsed: true
+      input:
+        disable_for_babysitter:
+          name: Disable for babysitter
+          description: >
+            Disables this automation when a babysitter is over,
+            preventing the light from turning on or off.
+          default: false
+          selector:
+            boolean: {}
 
-    respect_vacation_mode:
-      name: Respect vacation mode
-      description: >
-        When enabled (default), this automation is blocked while
-        vacation mode is on. Disable for outdoor lighting that
-        should keep running while on vacation (e.g. patio, porch).
-      default: true
-      selector:
-        boolean: {}
+        respect_vacation_mode:
+          name: Respect vacation mode
+          description: >
+            When enabled (default), this automation is blocked while
+            vacation mode is on. Disable for outdoor lighting that
+            should keep running while on vacation (e.g. patio, porch).
+          default: true
+          selector:
+            boolean: {}
 
-    # ========== Turn-On ==========
-    additional_detect_entities:
-      name: Additional turn-on entities
-      description: >
-        Additional entities that should turn on the light when they
-        transition from off to on.
+    turn_on_settings:
+      name: Turn-on settings
+      icon: mdi:lightbulb-on-outline
+      collapsed: false
+      input:
+        additional_detect_entities:
+          name: Additional turn-on entities
+          description: >
+            Additional entities that should turn on the light when they
+            transition from off to on.
 
-        If no entities are selected, the default (sun.sun) is required
-        to ensure the blueprint works.
-      default:
-        - sun.sun
-      selector:
-        entity:
-          multiple: true
+            If no entities are selected, the default (sun.sun) is required
+            to ensure the blueprint works.
+          default:
+            - sun.sun
+          selector:
+            entity:
+              multiple: true
 
-    additional_on_condition:
-      name: Turn-on conditions
-      description: >
-        Conditions that must be met for the light to turn on.
+        additional_on_condition:
+          name: Turn-on conditions
+          description: >
+            Conditions that must be met for the light to turn on.
 
-        The blueprint has built-in checks to ensure that presence and 
-        lighting automations are enabled, vacation mode is off, the 
-        room state is not sleeping, and the light is currently off (if
-        a light entity is set above). Plus the aditional turn-on 
-        toggles below.
-      default: []
-      selector:
-        condition: {}
+            The blueprint has built-in checks to ensure that presence and
+            lighting automations are enabled, vacation mode is off, the
+            room state is not sleeping, and the light is currently off (if
+            a light entity is set above). Plus the aditional turn-on
+            toggles below.
+          default: []
+          selector:
+            condition: {}
 
-    require_room_unoccupied_for_sensors:
-      name: Confirm room is unoccupied when turning on
-      description: >
-        Before turning on the light, ensure the room is
-        unoccupied (prevents additional conditions from 
-        turning the light back on when users want it off).
-      default: true
-      selector:
-        boolean: {}
+        require_room_unoccupied_for_sensors:
+          name: Confirm room is unoccupied when turning on
+          description: >
+            Before turning on the light, ensure the room is
+            unoccupied (prevents additional conditions from
+            turning the light back on when users want it off).
+          default: true
+          selector:
+            boolean: {}
 
-    suppress_when_upstairs_minimized:
-      name: Confirm upstairs lighting isn't minimized
-      description: >
-        Before turning on the light, check whether upstairs
-        lighting is being minimized.
-      default: "off"
-      selector:
-        select:
-          options:
-            - label: "Off"
-              value: "off"
-            - label: Check mode
-              value: mode
-            - label: Check timer
-              value: timer
-            - label: Check both
-              value: both
+        suppress_when_upstairs_minimized:
+          name: Confirm upstairs lighting isn't minimized
+          description: >
+            Before turning on the light, check whether upstairs
+            lighting is being minimized.
+          default: "off"
+          selector:
+            select:
+              options:
+                - label: "Off"
+                  value: "off"
+                - label: Check mode
+                  value: mode
+                - label: Check timer
+                  value: timer
+                - label: Check both
+                  value: both
 
-    check_suppress_sleeping_child:
-      name: Confirm lighting isn't suppressed for a sleeping child
-      description: >
-        Before turning on the light, ensure suppress lights for
-        sleeping child isn't enabled (avoids turning on the
-        lights when arriving home with a sleeping child).
-      default: false
-      selector:
-        boolean: {}
+        check_suppress_sleeping_child:
+          name: Confirm lighting isn't suppressed for a sleeping child
+          description: >
+            Before turning on the light, ensure suppress lights for
+            sleeping child isn't enabled (avoids turning on the
+            lights when arriving home with a sleeping child).
+          default: false
+          selector:
+            boolean: {}
 
-    turn_on_actions:
-      name: Turn-on actions
-      description: >
-        Actions to take when the light should turn on.
-      selector:
-        action: {}
+        turn_on_actions:
+          name: Turn-on actions
+          description: >
+            Actions to take when the light should turn on.
+          selector:
+            action: {}
 
-    # ========== Turn-Off ==========
-    additional_clear_entities:
-      name: Additional turn-off entities
-      description: >
-        Additional entities that should turn off the light when they
-        transition from on to off.
+    turn_off_settings:
+      name: Turn-off settings
+      icon: mdi:lightbulb-off-outline
+      collapsed: false
+      input:
+        additional_clear_entities:
+          name: Additional turn-off entities
+          description: >
+            Additional entities that should turn off the light when they
+            transition from on to off.
 
-        If no entities are selected, the default (sun.sun) is required
-        to ensure the blueprint works.
-      default:
-        - sun.sun
-      selector:
-        entity:
-          multiple: true
+            If no entities are selected, the default (sun.sun) is required
+            to ensure the blueprint works.
+          default:
+            - sun.sun
+          selector:
+            entity:
+              multiple: true
 
-    additional_off_condition:
-      name: Turn-off conditions
-      description: >
-        Conditions that must be met for the light to turn off.
+        additional_off_condition:
+          name: Turn-off conditions
+          description: >
+            Conditions that must be met for the light to turn off.
 
-        The blueprint has built-in checks to ensure that presence and 
-        lighting automations are enabled, vacation mode is off, the 
-        room state is empty, and the light is currently on (if a light 
-        entity is set above). Plus the aditional turn-on toggles below.
-      default: []
-      selector:
-        condition: {}
+            The blueprint has built-in checks to ensure that presence and
+            lighting automations are enabled, vacation mode is off, the
+            room state is empty, and the light is currently on (if a light
+            entity is set above). Plus the aditional turn-on toggles below.
+          default: []
+          selector:
+            condition: {}
 
-    require_room_unoccupied_for_off_sensors:
-      name: Confirm room is unoccupied when turning off
-      description: >
-        Before turning off the light, ensure the room is
-        unoccupied (prevents additional conditions from
-        turning off the light when someone is in the room).
-      default: true
-      selector:
-        boolean: {}
+        require_room_unoccupied_for_off_sensors:
+          name: Confirm room is unoccupied when turning off
+          description: >
+            Before turning off the light, ensure the room is
+            unoccupied (prevents additional conditions from
+            turning off the light when someone is in the room).
+          default: true
+          selector:
+            boolean: {}
 
-    delay_before_off:
-      name: Delay before off (minutes)
-      description: >
-        How long to wait before turning off the lights.
-      default: 0
-      selector:
-        number:
-          min: 0
-          max: 60
-          step: 0.1
-          unit_of_measurement: minutes
-          mode: box
+        delay_before_off:
+          name: Delay before off (minutes)
+          description: >
+            How long to wait before turning off the lights.
+          default: 0
+          selector:
+            number:
+              min: 0
+              max: 60
+              step: 0.1
+              unit_of_measurement: minutes
+              mode: box
 
-    alternate_delay_condition:
-      name: Alternate delay condition
-      description: >
-        Override the default delay when these conditions are
-        met. Useful for scenarios like waiting longer to turn
-        off the lights when a guest is visiting.
-      default: []
-      selector:
-        condition: {}
+        alternate_delay_condition:
+          name: Alternate delay condition
+          description: >
+            Override the default delay when these conditions are
+            met. Useful for scenarios like waiting longer to turn
+            off the lights when a guest is visiting.
+          default: []
+          selector:
+            condition: {}
 
-    alternate_delay:
-      name: Alternate delay (minutes)
-      description: >
-        How long to wait before turning off the lights if the
-        alternate delay condition is met.
-      default: 0
-      selector:
-        number:
-          min: 0
-          max: 60
-          step: 0.1
-          unit_of_measurement: minutes
-          mode: box
+        alternate_delay:
+          name: Alternate delay (minutes)
+          description: >
+            How long to wait before turning off the lights if the
+            alternate delay condition is met.
+          default: 0
+          selector:
+            number:
+              min: 0
+              max: 60
+              step: 0.1
+              unit_of_measurement: minutes
+              mode: box
 
-    turn_off_actions:
-      name: Turn-off actions
-      description: >
-        Actions to take when the light should turn off.
-      selector:
-        action: {}
+        turn_off_actions:
+          name: Turn-off actions
+          description: >
+            Actions to take when the light should turn off.
+          selector:
+            action: {}
 
 mode: restart
 max_exceeded: silent
